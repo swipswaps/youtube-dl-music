@@ -79,11 +79,11 @@ done
 # 'Extra' arguments for trimming time; can be passed to ffmpeg-normalize
 # See this link for trimming: https://superuser.com/questions/258032/is-it-possible-to-use-ffmpeg-to-trim-off-x-seconds-from-the-beginning-of-a-video
 trimflag="-e=" # open
-if [ -n $lead ]; then
+if [ -n "$lead" ]; then
   echo "Trimming first $lead seconds."
   trimflag+="-ss $lead "
 fi
-if [ -n $trail ]; then
+if [ -n "$trail" ]; then
   echo "Trimming last $trail seconds."
   trimflag+="-sseof $trail "
 fi

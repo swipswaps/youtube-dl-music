@@ -783,36 +783,40 @@ if __name__ == '__main__':
         # Edit the ID3 header, if file has one
         # Below are ID3v2, not ID3v2.4 (default format of mutagen)
         if id3:
-            del tags["APIC"]
-            del tags["TCON"]
-            tags["TPE1"] = TPE1(text=artist)
-            tags["TIT2"] = TIT2(text=title) # just track name
-            tags["TDOR"] = TDOR(text=props['year']) # original release time
-            tags["TDRC"] = TDRC(text=props['year']) # recording time
-            tags["TDRL"] = TDRL(text=props['year']) # release time
-            tags["TALB"] = TALB(text=props['title']) # album
-            tags["TOAL"] = TOAL(text=props['title']) # original album
+            tags['TPE1'] = TPE1(text=artist)
+            tags['TIT2'] = TIT2(text=title) # just track name
+            tags['TDOR'] = TDOR(text=props['year']) # original release time
+            tags['TDRC'] = TDRC(text=props['year']) # recording time
+            tags['TDRL'] = TDRL(text=props['year']) # release time
+            tags['TALB'] = TALB(text=props['title']) # album
+            tags['TOAL'] = TOAL(text=props['title']) # original album
             if props['image']:
                 tags["APIC"] = APIC(data=props['image'])
+            elif 'APIC' in tags:
+                del tags['APIC']
             if props['genres']:
-                tags["TCON"] = TCON(text=props['genres'][0], genres=props['genres'])
+                tags['TCON'] = TCON(text=props['genres'][0], genres=props['genres'])
+            elif 'TCON' in tags:
+                del tags['TCON']
             if url:
-                tags["COMM"] = COMM(text=url, lang="eng", desc="URL")
+                tags['COMM'] = COMM(text=url, lang='eng', desc='URL')
             tags.save(path) # supply path in case we are creating ID3 header for first time
 
         # Edit as an AAC file
         else:
-            del tags["covr"]
-            del tags["\xa9gen"]
-            tags["\xa9ART"] = [artist] # artist; includes whether "The" is in front, best punctuation, etc.
-            tags["\xa9nam"] = [title] # track name
-            tags["\xa9day"] = [props['year']]
-            tags["\xa9alb"] = [props['title']] # album, from lookup
+            tags['\xa9ART'] = [artist] # artist; includes whether "The" is in front, best punctuation, etc.
+            tags['\xa9nam'] = [title] # track name
+            tags['\xa9day'] = [props['year']]
+            tags['\xa9alb'] = [props['title']] # album, from lookup
             if props['image']:
-                tags["covr"] = [MP4Cover(props['image'], imageformat=MP4Cover.FORMAT_JPEG)]
+                tags['covr'] = [MP4Cover(props['image'], imageformat=MP4Cover.FORMAT_JPEG)]
+            elif 'covr' in tags:
+                del tags['covr']
             if props['genres']:
-                tags["\xa9gen"] = [*props['genres']] # genres
+                tags['\xa9gen'] = [*props['genres']] # genres
+            elif '\xa9gen' in tags:
+                del tags['\xa9gen']
             if url:
-                tags["\xa9cmt"] = [url] # embed URL as comment
+                tags['\xa9cmt'] = [url] # embed URL as comment
             tags.save()
 
