@@ -35,100 +35,6 @@ sdir = os.path.dirname(os.path.realpath(__file__))
 config = f"{sdir}/config"
 choices = f"{sdir}/choices"
 
-# List of acceptable genres from Discogs
-# Ignore the non-musical specifications, e.g. "Soundtrack", and a couple others
-bad_genres = (
-    'Soundtrack', 'Score', 'Special Effects', 'Movie Effects',
-    'Contemporary', 'Easy Listening', 'Early', 'Political',
-    )
-discogs_genres = tuple(genre for genre in (
-    'Aboriginal', 'Abstract', 'Acid', 'Acid House', 'Acid Jazz'
-    'Acid Rock', 'Acoustic', 'African', 'Afro-Cuban', 'Afro-Cuban Jazz'
-    'Afrobeat', 'Alternative Rock', 'Ambient', 'Andalusian Classical', 'Arena Rock'
-    'Art Rock', 'Audiobook', 'Avant-garde Jazz', 'Avantgarde', 'Axé'
-    'Bachata', 'Ballad', 'Baltimore Club', 'Bangladeshi Classical', 'Baroque'
-    'Bass Music', 'Bassline', 'Batucada', 'Bayou Funk', 'Beat'
-    'Beatbox', 'Beatdown', 'Beguine', 'Berlin-School', 'Bhangra'
-    'Big Band', 'Big Beat', 'Black Metal', 'Bluegrass', 'Blues Rock'
-    'Bolero', 'Bollywood', 'Bongo Flava', 'Boogaloo', 'Boogie'
-    'Boogie Woogie', 'Boom Bap', 'Bop', 'Bossa Nova', 'Bossanova'
-    'Bounce', 'Brass Band', 'Breakbeat', 'Breakcore', 'Breaks'
-    'Brit Pop', 'Britcore', 'Broken Beat', 'Cajun', 'Calypso'
-    'Cambodian Classical', 'Canzone Napoletana', 'Cape Jazz', 'Carnatic', 'Celtic'
-    'Cha-Cha', 'Chanson', 'Charanga', 'Chicago Blues', 'Chinese Classical'
-    'Chiptune', 'Classic Rock', 'Classical', 'Comedy', 'Compas'
-    'Conjunto', 'Conscious', 'Contemporary', 'Contemporary Jazz', 'Contemporary R&B'
-    'Cool Jazz', 'Copla', 'Corrido', 'Country', 'Country Blues'
-    'Country Rock', 'Crunk', 'Crust', 'Cuatro', 'Cubano'
-    'Cumbia', 'Cut-up/DJ', 'DJ Battle Tool', 'Dance-pop', 'Dancehall'
-    'Danzon', 'Dark Ambient', 'Darkwave', 'Death Metal', 'Deathrock'
-    'Deep House', 'Delta Blues', 'Descarga', 'Dialogue', 'Disco'
-    'Dixieland', 'Donk', 'Doo Wop', 'Doom Metal', 'Doomcore'
-    'Downtempo', 'Drone', 'Drum n Bass', 'Dub', 'Dub Poetry'
-    'Dub Techno', 'Dubstep', 'EBM', 'Early', 'East Coast Blues'
-    'Easy Listening', 'Education', 'Educational', 'Electric Blues', 'Electro'
-    'Electro House', 'Electroclash', 'Emo', 'Enka', 'Ethereal'
-    'Euro House', 'Euro-Disco', 'Eurobeat', 'Eurodance', 'Europop'
-    'Experimental', 'Fado', 'Favela Funk', 'Field Recording', 'Flamenco'
-    'Folk', 'Folk Metal', 'Folk Rock', 'Forró', 'Free Funk'
-    'Free Improvisation', 'Free Jazz', 'Freestyle', 'Funk', 'Funk Metal'
-    'Fusion', 'Future Jazz', 'G-Funk', 'Gabber', 'Gagaku'
-    'Gamelan', 'Gangsta', 'Garage House', 'Garage Rock', 'Ghetto'
-    'Ghetto House', 'Ghettotech', 'Glam', 'Glitch', 'Go-Go'
-    'Goa Trance', 'Gogo', 'Gospel', 'Goth Rock', 'Gothic Metal'
-    'Grime', 'Grindcore', 'Griot', 'Grunge', 'Guaguancó'
-    'Guaracha', 'Gypsy Jazz', 'Happy Hardcore', 'Hard Bop', 'Hard House'
-    'Hard Rock', 'Hard Techno', 'Hard Trance', 'Hardcore', 'Hardcore Hip-Hop'
-    'Hardstyle', 'Harmonica Blues', 'Heavy Metal', 'Hi NRG', 'Highlife'
-    'Hindustani', 'Hip Hop', 'Hip-House', 'Hiplife', 'Honky Tonk'
-    'Horrorcore', 'House', 'Hyphy', 'IDM', 'Illbient'
-    'Impressionist', 'Indian Classical', 'Indie Pop', 'Indie Rock', 'Industrial'
-    'Instrumental', 'Interview', 'Italo House', 'Italo-Disco', 'Italodance'
-    'J-pop', 'Jazz-Funk', 'Jazz-Rock', 'Jazzdance', 'Jazzy Hip-Hop'
-    'Jibaro', 'Juke', 'Jump Blues', 'Jumpstyle', 'Jungle'
-    'Junkanoo', 'Karaoke', 'Kaseko', 'Klasik', 'Klezmer'
-    'Korean Court Music', 'Krautrock', 'Kwaito', 'Lambada', 'Lao Music'
-    'Latin', 'Latin Jazz', 'Laïkó', 'Leftfield', 'Lo-Fi'
-    'Louisiana Blues', 'Lounge', 'Lovers Rock', 'Luk Thung', 'MPB'
-    'Makina', 'Mambo', 'Marches', 'Mariachi', 'Marimba'
-    'Math Rock', 'Medieval', 'Melodic Hardcore', 'Mento', 'Merengue'
-    'Metalcore', 'Miami Bass', 'Military', 'Minimal', 'Minimal Techno'
-    'Mizrahi', 'Mod', 'Modal', 'Modern', 'Modern Classical'
-    'Modern Electric Blues', 'Monolog', 'Motswako', 'Mouth Music', 'Movie Effects'
-    'Mugham', 'Music Hall', 'Musical', 'Musique Concrète', 'Neo Soul'
-    'Neo-Classical', 'Neo-Romantic', 'Neofolk', 'New Age', 'New Beat'
-    'New Jack Swing', 'New Wave', 'No Wave', 'Noise', 'Nordic'
-    'Norteño', 'Novelty', 'Nu Metal', 'Nueva Cancion', 'Nueva Trova'
-    'Nursery Rhymes', 'Oi', 'Opera', 'Operetta', 'Ottoman Classical'
-    'Overtone Singing', 'P.Funk', 'Pachanga', 'Pacific', 'Parody'
-    'Persian Classical', 'Philippine Classical', 'Piano Blues', 'Piedmont Blues', 'Piobaireachd'
-    'Pipe & Drum', 'Plena', 'Poetry', 'Political', 'Polka'
-    'Pop Punk', 'Pop Rap', 'Pop Rock', 'Post Bop', 'Post Rock'
-    'Post-Modern', 'Post-Punk', 'Power Electronics', 'Power Metal', 'Power Pop'
-    'Prog Rock', 'Progressive House', 'Progressive Trance', 'Promotional', 'Psy-Trance'
-    'Psychedelic', 'Psychedelic Rock', 'Psychobilly', 'Pub Rock', 'Public Service Announcement'
-    'Punk', 'Quechua', 'Radioplay', 'Ragga', 'Ragga HipHop'
-    'Ragtime', 'Ranchera', 'Rapso', 'Raï', 'Rebetiko'
-    'Reggae', 'Reggae Gospel', 'Reggae-Pop', 'Reggaeton', 'Religious'
-    'Renaissance', 'Rhythm & Blues', 'Rhythmic Noise', 'RnB/Swing', 'Rock & Roll'
-    'Rockabilly', 'Rocksteady', 'Romani', 'Romantic', 'Roots Reggae'
-    'Rumba', 'Rune Singing', 'Salsa', 'Samba', 'Schlager'
-    'Schranz', 'Score', 'Screw', 'Sephardic', 'Serial'
-    'Sermon', 'Shoegaze', 'Ska', 'Skiffle', 'Skweee'
-    'Sludge Metal', 'Smooth Jazz', 'Soca', 'Soft Rock', 'Son'
-    'Sonero', 'Soukous', 'Soul', 'Soul-Jazz', 'Soundtrack'
-    'Southern Rock', 'Space Rock', 'Space-Age', 'Spaza', 'Special Effects'
-    'Speech', 'Speed Garage', 'Speed Metal', 'Speedcore', 'Spoken Word'
-    'Steel Band', 'Stoner Rock', 'Story', 'Surf', 'Swamp Pop'
-    'Swing', 'Swingbeat', 'Symphonic Rock', 'Synth-pop', 'Sámi Music'
-    'Tango', 'Tech House', 'Tech Trance', 'Technical', 'Techno'
-    'Tejano', 'Texas Blues', 'Thai Classical', 'Theme', 'Therapy'
-    'Thrash', 'Thug Rap', 'Timba', 'Trance', 'Trap'
-    'Tribal', 'Tribal House', 'Trip Hop', 'Trova', 'Turntablism'
-    'Twelve-tone', 'UK Garage', 'Vallenato', 'Vaporwave', 'Viking Metal'
-    'Vocal', 'Witch House', 'Zouk', 'Zydeco', 'Electronic'
-    ) if genre not in bad_genres)
-
 # Read config file
 if not os.path.exists(config):
     raise IOError("Add fields to the file {config!r} to enable metadata tagging.")
@@ -150,7 +56,7 @@ mb.set_useragent('Self', 'NA', contact=config.get('contact',''))
 client = discogs_client.Client('Personal', user_token=config['token'])
 
 # Preferred release group types for retrieving album name and artwork
-type_prefs_grouped = (
+type_prefs = (
     {'Album','Single'},
     {'EP'},
     {'Compilation','Other','Soundtrack','NA'},
@@ -158,7 +64,7 @@ type_prefs_grouped = (
     )
 
 # Preferred media type for album name and artwork
-media_pref = (
+media_prefs = (
     'digital',
     'usb',
     'cd',
@@ -170,7 +76,6 @@ media_pref = (
     )
 
 # Valid countries and regions for album name and artwork, includes global designations
-# anglo_countries = ('XW','XE','US','GB','AU','CA','IE')
 # anglo_countries = ('US','GB','CA','AU','IE','JP','XE','XU','XW','NA')
 anglo_countries = (
     'NA',
@@ -184,6 +89,117 @@ anglo_countries = (
     'IE',
     'other'
     )
+
+# List of acceptable genres from Discogs
+# Ignore the non-musical specifications, e.g. "Soundtrack", and a couple others
+bad_genres = (
+    'Soundtrack', 'Score', 'Special Effects', 'Movie Effects',
+    'Contemporary', 'Easy Listening', 'Early', 'Political',
+    )
+discogs_genres = tuple(genre for genre in (
+    'AOR', 'Aboriginal', 'Abstract', 'Acid', 'Acid House',
+    'Acid Jazz', 'Acid Rock', 'Acoustic', 'African', 'Afro-Cuban',
+    'Afro-Cuban Jazz', 'Afrobeat', 'Alternative Metal', 'Alternative Rock', 'Ambient',
+    'Andalusian Classical', 'Arena Rock', 'Art Rock', 'Audiobook', 'Avant-garde Jazz',
+    'Avantgarde', 'Axé', 'Azonto', 'Bachata', 'Ballad',
+    'Ballroom', 'Baltimore Club', 'Bangladeshi Classical', 'Barbershop', 'Baroque',
+    'Basque Music', 'Bass Music', 'Bassline', 'Batucada', 'Bayou Funk',
+    'Beat', 'Beatbox', 'Beatdown', 'Beguine', 'Berlin-School',
+    'Bhangra', 'Big Band', 'Big Beat', 'Black Metal', 'Bluegrass',
+    'Blues Rock', 'Bollywood', 'Bongo Flava', 'Boogaloo', 'Boogie',
+    'Boogie Woogie', 'Boom Bap', 'Bop', 'Bossa Nova', 'Bossanova',
+    'Bounce', 'Brass Band', 'Break-In', 'Breakbeat', 'Breakcore',
+    'Breaks', 'Brit Pop', 'Britcore', 'Broken Beat', 'Bubblegum',
+    'Bubbling', 'Cajun', 'Calypso', 'Cambodian Classical', 'Candombe',
+    'Canzone Napoletana', 'Cape Jazz', 'Carnatic', 'Catalan Music', 'Celtic',
+    'Cha-Cha', 'Chacarera', 'Chamamé', 'Champeta', 'Chanson',
+    'Charanga', 'Chicago Blues', 'Chicago Honky', 'Chicago Push', 'Chillwave',
+    'Chinese Classical', 'Chiptune', 'Choral', 'Classic Rock', 'Classical',
+    'Cloud Rap', 'Coldwave', 'Comedy', 'Compas', 'Conjunto',
+    'Conscious', 'Contemporary', 'Contemporary Jazz', 'Contemporary R&B', 'Cool Jazz',
+    'Copla', 'Corrido', 'Country', 'Country Blues', 'Country Rock',
+    'Crunk', 'Crust', 'Cuatro', 'Cubano', 'Cumbia',
+    'Cut-up/DJ', 'DJ Battle Tool', 'Dance-pop', 'Dancehall', 'Danzon',
+    'Dark Ambient', 'Darkwave', 'Death Metal', 'Deathcore', 'Deathrock',
+    'Deep House', 'Deep Techno', 'Delta Blues', 'Descarga', 'Dialogue',
+    'Disco', 'Disco Polo', 'Dixieland', 'Donk', 'Doo Wop',
+    'Doom Metal', 'Doomcore', 'Downtempo', 'Drone', 'Drum n Bass',
+    'Dub', 'Dub Poetry', 'Dub Techno', 'Dubstep', 'Dungeon Synth',
+    'EBM', 'Early', 'East Coast Blues', 'Easy Listening', 'Education',
+    'Educational', 'Electric Blues', 'Electro', 'Electro House', 'Electroclash',
+    'Emo', 'Enka', 'Éntekhno', 'Ethereal', 'Ethno-pop',
+    'Euro House', 'Euro-Disco', 'Eurobeat', 'Eurodance', 'Europop',
+    'Experimental', 'Fado', 'Favela Funk', 'Field Recording', 'Flamenco',
+    'Folk', 'Folk Metal', 'Folk Rock', 'Forró', 'Free Funk',
+    'Free Improvisation', 'Free Jazz', 'Freestyle', 'Funaná', 'Funeral Doom Metal',
+    'Funk', 'Funk Metal', 'Funkot', 'Fusion', 'Future Jazz',
+    'G-Funk', 'Gabber', 'Gagaku', 'Gamelan', 'Gangsta',
+    'Garage House', 'Garage Rock', 'German/\'Oom-Pah\' Polka', 'Ghetto', 'Ghetto House',
+    'Ghettotech', 'Glam', 'Glitch', 'Go-Go', 'Goa Trance',
+    'Gogo', 'Goregrind', 'Gospel', 'Goth Rock', 'Gothic Metal',
+    'Grime', 'Grindcore', 'Griot', 'Grunge', 'Guaguancó',
+    'Guajira', 'Guaracha', 'Guarania', 'Gypsy Jazz', 'Hands Up',
+    'Happy Hardcore', 'Hard Beat', 'Hard Bop', 'Hard House', 'Hard Rock',
+    'Hard Techno', 'Hard Trance', 'Hardcore', 'Hardcore Hip-Hop', 'Hardstyle',
+    'Harmonica Blues', 'Harsh Noise Wall', 'Heavenly Voices', 'Heavy Metal', 'Hi NRG',
+    'Highlife', 'Hillbilly', 'Hindustani', 'Hip Hop', 'Hip-House',
+    'Hiplife', 'Honky Tonk', 'Horrorcore', 'House', 'Hyphy',
+    'IDM', 'Illbient', 'Impressionist', 'Indian Classical', 'Indie Pop',
+    'Indie Rock', 'Industrial', 'Instrumental', 'Interview', 'Italo House',
+    'Italo-Disco', 'Italodance', 'J-Core', 'J-pop', 'Jazz-Funk',
+    'Jazz-Rock', 'Jazzdance', 'Jazzy Hip-Hop', 'Jibaro', 'Joropo',
+    'Jota', 'Juke', 'Jump Blues', 'Jumpstyle', 'Jungle',
+    'Junkanoo', 'K-pop', 'Karaoke', 'Kaseko', 'Kayōkyoku',
+    'Keroncong', 'Kizomba', 'Klasik', 'Klezmer', 'Korean Court Music',
+    'Krautrock', 'Kwaito', 'Lambada', 'Lao Music', 'Latin',
+    'Latin Jazz', 'Laïkó', 'Leftfield', 'Light Music', 'Liscio',
+    'Lo-Fi', 'Louisiana Blues', 'Lounge', 'Lovers Rock', 'Luk Krung',
+    'Luk Thung', 'MPB', 'Makina', 'Maloya', 'Mambo',
+    'Marches', 'Mariachi', 'Marimba', 'Math Rock', 'Mbalax',
+    'Medieval', 'Melodic Death Metal', 'Melodic Hardcore', 'Memphis Blues', 'Mento',
+    'Merengue', 'Metalcore', 'Miami Bass', 'Military', 'Min\'yō',
+    'Minimal', 'Minimal Techno', 'Minneapolis Sound', 'Mizrahi', 'Mod',
+    'Modal', 'Modern', 'Modern Classical', 'Modern Electric Blues', 'Monolog',
+    'Motswako', 'Mouth Music', 'Movie Effects', 'Mugham', 'Music Hall',
+    'Musical', 'Musique Concrète', 'NDW', 'Neo Soul', 'Neo Trance',
+    'Neo-Classical', 'Neo-Romantic', 'Neofolk', 'Nerdcore Techno', 'New Age',
+    'New Beat', 'New Jack Swing', 'New Wave', 'No Wave', 'Noise',
+    'Noisecore', 'Nordic', 'Norteño', 'Novelty', 'Nu Metal',
+    'Nu Metalcore', 'Nu-Disco', 'Nueva Cancion', 'Nueva Trova', 'Nursery Rhymes',
+    'Népzene', 'Oi', 'Opera', 'Operetta', 'Ottoman Classical',
+    'Overtone Singing', 'P.Funk', 'Pachanga', 'Pacific', 'Parody',
+    'Pasodoble', 'Persian Classical', 'Philippine Classical', 'Phleng Phuea Chiwit', 'Piano Blues',
+    'Piedmont Blues', 'Piobaireachd', 'Pipe & Drum', 'Plena', 'Poetry',
+    'Polish Polka', 'Political', 'Polka', 'Pop Punk', 'Pop Rap',
+    'Pop Rock', 'Porro', 'Post Bop', 'Post Rock', 'Post-Hardcore',
+    'Post-Metal', 'Post-Modern', 'Post-Punk', 'Power Electronics', 'Power Metal',
+    'Power Pop', 'Prog Rock', 'Progressive Breaks', 'Progressive House', 'Progressive Metal',
+    'Progressive Trance', 'Promotional', 'Psy-Trance', 'Psychedelic', 'Psychedelic Rock',
+    'Psychobilly', 'Pub Rock', 'Public Broadcast', 'Public Service Announcement', 'Punk',
+    'Quechua', 'Radioplay', 'Ragga', 'Ragga HipHop', 'Ragtime',
+    'Ranchera', 'Rapso', 'Raï', 'Rebetiko', 'Reggae',
+    'Reggae Gospel', 'Reggae-Pop', 'Reggaeton', 'Religious', 'Renaissance',
+    'Rhythm & Blues', 'Rhythmic Noise', 'RnB/Swing', 'Rock & Roll', 'Rock Opera',
+    'Rockabilly', 'Rocksteady', 'Romani', 'Romantic', 'Roots Reggae',
+    'Rumba', 'Rune Singing', 'Salsa', 'Samba', 'Schlager',
+    'Schranz', 'Score', 'Screw', 'Sea Shanties', 'Sephardic',
+    'Serial', 'Sermon', 'Shoegaze', 'Ska', 'Skiffle',
+    'Skweee', 'Slovenian Polka', 'Sludge Metal', 'Smooth Jazz', 'Soca',
+    'Soft Ballad', 'Soft Rock', 'Son', 'Son Montuno', 'Sonero',
+    'Soukous', 'Soul', 'Soul-Jazz', 'Sound Art', 'Sound Collage',
+    'Sound Poetry', 'Soundtrack', 'Southern Rock', 'Space Rock', 'Space-Age',
+    'Spaza', 'Special Effects', 'Speech', 'Speed Garage', 'Speed Metal',
+    'Speedcore', 'Spoken Word', 'Steel Band', 'Stoner Rock', 'Story',
+    'Surf', 'Swamp Pop', 'Swing', 'Swingbeat', 'Symphonic Rock',
+    'Synth-pop', 'Synthwave', 'Sámi Music', 'Séga', 'Tango',
+    'Tankqitai', 'Tech House', 'Tech Trance', 'Technical', 'Techno',
+    'Tejano', 'Texas Blues', 'Thai Classical', 'Theme', 'Therapy',
+    'Thrash', 'Thug Rap', 'Timba', 'Trance', 'Trap',
+    'Tribal', 'Tribal House', 'Trip Hop', 'Tropical House', 'Trova',
+    'Turntablism', 'Twelve-tone', 'Twist', 'UK Funky', 'UK Garage',
+    'Vallenato', 'Vaporwave', 'Viking Metal', 'Vocal', 'Volksmusik',
+    'Western Swing', 'Witch House', 'Zamba', 'Zemer Ivri', 'Zouk', 'Zydeco',
+    ) if genre not in bad_genres)
 
 #------------------------------------------------------------------------------#
 # Helper functions
@@ -418,15 +434,15 @@ def guess_album(recordings):
     # members, and by its type (album vs. single, etc.)
     metadata = {'year': year, 'image': None}
     title = image = None
-    for type_prefs in type_prefs_grouped:
-        print(f"Trying album types: {', '.join(type_prefs)}.")
-        groupsA = [group for group in groups if group.get('type', 'NA') in type_prefs]
-        for firstyear in sorted(set(min(group['years']) for group in groupsA)): # note min([None]) == None
-            groupsB = [group for group in groupsA if min(group['years']) == firstyear]
+    for types in type_prefs:
+        print(f"Trying album types: {', '.join(types)}.")
+        igroups = [group for group in groups if group.get('type', 'NA') in types]
+        for firstyear in sorted(set(min(group['years']) for group in igroups)): # note min([None]) == None
+            jgroups = [group for group in igroups if min(group['years']) == firstyear]
             # Sort by number of releases in group
-            for count in sorted(set(group['count'] for group in groupsB), reverse=True):
-                groupsC = [group for group in groupsB if group['count'] == count]
-                for group in groupsC:
+            for count in sorted(set(group['count'] for group in jgroups), reverse=True):
+                kgroups = [group for group in jgroups if group['count'] == count]
+                for group in kgroups:
                     # 1) Get album title and record it from the
                     # *preferred* group for artwork, whether or not it
                     # actually has artwork, in case we cannot find any
@@ -479,25 +495,25 @@ def guess_artwork(releases):
     # First, go by release medium
     years = [int(release.get('date','0001')[:4]) for release in releases if release.get('date','0001')]
     filter_known = [False for release in releases] # want to catch any unknown media
-    for m,medium in enumerate(media_pref):
+    for m,medium in enumerate(media_prefs):
         if medium == 'other': # we are at the end; see if any media were left
             filter_ = [not known for known in filter_known] # iterate over what's left
         else: # filter, and add known media to lsit
             filter_ = [any(medium in _.get('format','xxxxx').lower() for _ in release.get('medium-list',[{}]))
                 for release in releases] # last one is unknown
             filter_known = [f1 or f2 for f1,f2 in zip(filter_,filter_known)]
-        releasesA = [r for f,r in zip(filter_,releases) if f]
-        yearsA = [y for f,y in zip(filter_,years) if f]
-        for year in sorted(set(yearsA), reverse=True):
-            releasesB = [r for r,y in zip(releasesA,yearsA) if y == year]
+        ireleases = [r for f,r in zip(filter_,releases) if f]
+        iyears = [y for f,y in zip(filter_,years) if f]
+        for year in sorted(set(iyears), reverse=True):
+            jreleases = [r for r,y in zip(ireleases,iyears) if y == year]
             for country in anglo_countries:
                 # Also try non-anglo countries (sometimes only one available)
                 if country == 'other':
-                    releasesC = [r for r in releasesB if r.get('country','NA') not in anglo_countries]
+                    kreleases = [r for r in jreleases if r.get('country','NA') not in anglo_countries]
                 else:
-                    releasesC = [r for r in releasesB if r.get('country','NA') == country]
+                    kreleases = [r for r in jreleases if r.get('country','NA') == country]
                 # Try to return image art; remaining releases, choose order at random
-                for release in releasesC:
+                for release in kreleases:
                     # User input
                     rmedia = [m.get('format','') for m in release.get('medium-list',[{}])]
                     rcountry, rtitle = release.get('country',''), release.get('title','')
@@ -508,7 +524,7 @@ def guess_artwork(releases):
                     # Pull artwork
                     # This is a slow step, so make sure to print message
                     try:
-                        print('Trying album...')
+                        print("Checking for artwork...")
                         data = mb.get_image_front(release.get('id',''))
                     except ResponseError:
                         continue
@@ -576,7 +592,7 @@ def genres_discogs(rgid):
         return []
     if 'Funk / Soul' in genres: # special filter
         remove = genres.index('Funk / Soul')
-        genres = genres[:remove] + ['Funk','Soul'] + genres[remove+1:]
+        genres = genres[:remove] + ['Funk', 'Soul'] + genres[remove+1:]
             # add these individually, and preserve location in original list
     added = set()
     genres = [genre for genre in genres if genre in discogs_genres
@@ -654,15 +670,15 @@ def genres_musicbrainz(recordings):
             words = ['rock', '&', 'roll']
         if 'rnb' in words or (words[0] == 'r' and words[-1] == 'b'): # correct e.g. r n' b
             words = ['rhythm', '&', 'blues']
-        if 'aor' in words: # AOR == album oriented rock
-            words = ['album', 'rock']
+        if words[0] == 'album' and words[-1] == 'rock': # AOR == album oriented rock
+            words = ['aor']
         # Break up or join words to match Discogs convention
         if 'powerpop' in words: # powerpop == power pop
             words = ['power', 'pop']
         if 'synthpop' in words: # powerpop == power pop
             words = ['synth', 'pop']
         if 'classic' in words and 'rock' in words: # sometimes get <something> classic rock
-            words = ['classic','rock']
+            words = ['classic', 'rock']
         if 'avant' in words or 'garde' in words: # avante-garde/avante garde == Avantegarde
             words = ['avantgarde']
         # Word order, e.g. rock pop --> pop rock
@@ -689,6 +705,7 @@ def genres_musicbrainz(recordings):
     genres = [(discogs_genres[discogs_std.index(standardize(genre[0]))], genre[1])
             for genre in genres if standardize(genre[0]) in discogs_std
             and genre[1]>0] # make sure at least one "count" is present
+
     # If genre in added, 2nd statement is not called, but that's ok because
     # we don't need to re-add it to the set
     added = set() # start an empty set
