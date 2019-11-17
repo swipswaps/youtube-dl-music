@@ -714,7 +714,7 @@ if __name__ == '__main__':
     # Parse command line arguments
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('path', type=str, nargs='*',
+    parser.add_argument('path', type=str, nargs='+',
             help='The file path(s).')
     parser.add_argument('-v', '--verbose', action='store_const', const=True, default=False,
             help='Increase the verbosity.')

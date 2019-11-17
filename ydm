@@ -189,5 +189,5 @@ mv "$path_normalized" "$path_new"
 # Change metadata using python function
 #------------------------------------------------------------------------------#
 echo "Adding metadata."
-ydm-metadata $metaflags -u="$url" "$path_new"
+ydm-metadata $metaflags --url "$url" "$path_new"
 [ $? -eq 0 ] || raise "Metadata script failed."
