@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 usage="ydm [OPTION...] URL ARTIST - TITLE"
 doc="
-This script post-processes the raw model output files generated from the
-GFDL dry core model. Needs to be supplied with a source and destination directory.
-
 This script downloads, normalizes, and tags audio from arbitrary youtube
 videos. It performs the following 3 steps:
 
