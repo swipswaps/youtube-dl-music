@@ -32,8 +32,8 @@ from PIL import Image
 #------------------------------------------------------------------------------#
 # File names
 sdir = os.path.dirname(os.path.realpath(__file__))
-config = f"{sdir}/config"
-choices = f"{sdir}/choices"
+config = f"{sdir}/.config"
+choices = f"{sdir}/.choices"
 
 # Read config file
 if not os.path.exists(config):

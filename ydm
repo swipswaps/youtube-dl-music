@@ -98,7 +98,7 @@ echo "Name: \"$name\""
 
 # Download directory
 # Note 'cut' will automatically trim leading/trailing whitespace it seems
-config=$(dirname $(realpath $0))/config
+config=$(dirname $(realpath $0))/.config
 [ -r "$config" ] || raise "Config file \"$config\" not found."
 directory="$(cat "$config" | grep "directory" | cut -s -d '=' -f 2 | xargs)"
 directory="${directory/"~"/$HOME}" # don't expand spaces, but expand ~

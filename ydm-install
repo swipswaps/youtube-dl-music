@@ -14,4 +14,4 @@ for dependency in ${dependencies[@]}; do
   fi
 done
 # Next create a "config" file if it does not exist already
-[ ! -e config ] && touch config
+[ -r .config ] || touch .config
