@@ -5,30 +5,36 @@
 This script uses `youtube-dl` to download and save audio from youtube into `aac`/`m4a` files (the native format of youtube audio), normalizes the audio/volume using `ffmpeg-normalize`, and adds metadata tags using a python script called `ydm-metadata`.
 
 # Installation
-This library is intended for UNIX shells -- i.e. MacOS, Ubuntu, perhaps the Windows 10 UNIX terminal (untested). Install this library by navigating to your **home** directory in the terminal, and entering
+This library is intended for UNIX shells -- i.e. MacOS, Ubuntu, perhaps the Windows 10 Unix terminal. Install this library by navigating to your home directory in the terminal and entering
 
     git clone https://github.com/lukelbd/youtube-dl-music
 
-This should create a directory named `youtube-dl-music`. You then need to make sure the `ydm` and `ydm-metadata` executables are in your `$PATH` variable. The simplest option may be to place in your `.bash_profile` or `.bashrc` the line 
+This should create a directory named `youtube-dl-music`.
+
+Next you need to make sure the `ydm` and `ydm-metadata` executables are in your `$PATH` variable. Simply add the line
 
     export PATH="$HOME/youtube-dl-music:$PATH"
 
-then restart the shell or "source" the file with `source ~/.bash_profile`. Now, the tools you need will be accessible every time you start a terminal.
+to your shell configuration file, usually named `~/.bash_profile` or `~/.bashrc`,
+then restart the shell or "source" the file with `source <file>`.
 
-If you don't want to use `ydm-metadata`, just manually install `ffmpeg`, `youtube-dl`, and `ffmpeg-normalize`, and always use the flag `-q` when calling the `ydm` command.
+If you don't want to use `ydm-metadata`:
 
-If you do want to use `ydm-metadata`, a few more steps are required:
+  * Manually install `ffmpeg`, `youtube-dl`, and `ffmpeg-normalize`.
+  * Always use the flag `-q` when calling the `ydm` command.
 
-  1. Make sure your version of `python3` is python3.6+. Check this with `python3 --version`. The `ydm-metadata` script has f-strings, which are a python 3.6+ feature. f-strings are totally awesome and you should be using them (: .
-  1. Run the `ydm-install` command. This does the following:
-      * Installs the python packages needed for `ydm-metadata` (see below).
-      * Creates a file named `config` in the `youtube-dl-music` directory.
-  1. Create an account with [**Discogs**](https://www.discogs.com/users/create) and another account with [**MusicBrainz**](https://musicbrainz.org/register?uri=%2Fdoc%2FHow_to_Create_an_Account). Discogs and MusicBrainz are the two major online discography databases, each with their strengths and weaknesses each with public python APIs. So, why don't we use both? :)
-      * After creating the Discogs account, click on the top-right profile image and to Settings --> Developer, then click the "Generate token" button.
-  1. Add the following lines to the file `config` in the format `key = value` (note whitespace doesn't matter, and entries don't need to be quoted):
-      * To set the download location: `directory = <your music folder here>`.
-      * To use the Discogs API: use the token you created in step (3) with `token = <your token here>`.
-      * To use the MusicBrainz API: no token is needed; just add your account username and password with `username = <your username here>` and `password = <your password here>`.
+If you do want to use `ydm-metadata`:
+
+  * Make sure your version of `python3` is python3.6+. Check this with `python3 --version`. The `ydm-metadata` script has f-strings, which are a python 3.6+ feature.
+  * Run the `ydm-install` command. This does the following:
+    - Installs the python packages needed for `ydm-metadata` (see below).
+    - Creates a file named `config` in the `youtube-dl-music` directory.
+  * Create an account with [**Discogs**](https://www.discogs.com/users/create) and another account with [**MusicBrainz**](https://musicbrainz.org/register?uri=%2Fdoc%2FHow_to_Create_an_Account). Discogs and MusicBrainz are the two major online discography databases, each with their strengths and weaknesses each with public python APIs. So, why not use both? :)
+  * After creating the Discogs account, click on the top-right profile image and to Settings --> Developer, then click the "Generate token" button.
+  * Add the following lines to the file `config` in the format `key = value` (whitespace does not matter and quotes are optional):
+    - To set the download location: `directory = <your music folder here>`.
+    - To use the Discogs API: use the token you created in step (3) with `token = <your token here>`.
+    - To use the MusicBrainz API: no token is needed; just add your account username and password with `username = <your username here>` and `password = <your password here>`.
 
 # Dependencies
 ## Non-Python
@@ -98,7 +104,7 @@ Here's a play-by-play of what `ydm-metadata` does:
     * Write "cover art" metadata from the most *modern* release and most *modern* release format amongst releases in the highest-ranked release group. This gets the nicest-looking cover art available. If `--confirm` was passed, user can choose to bypass release groups/releases for artwork.
 
 # Software suggestions
-## macOS
+## Mac
 Use **Swinsian** instead of iTunes for playback. Swinsian costs \$20, but IMO it is really worth it. The two iTunes dealbreakers for me were:
 
   1. iTunes can't "watch" folders while open (i.e. automatically add and remove songs as they appear/disappear from a folder). The only hope is some complicated hack involving the "Automatically add to iTunes" folder (personally I couldn't get this to work; perhaps one must restart iTunes every time or tell it manually to rescan this folder).
@@ -106,5 +112,5 @@ Use **Swinsian** instead of iTunes for playback. Swinsian costs \$20, but IMO it
   the cursor jump to that row [and when trying to do that, get inexplicable slowdown]; also there is no filename column).
 
 ## Windows
-Use **foobar2000**. It looks pretty ugly out of the box, but it is free, it is lighting fast, and you can use custom themes that make it look pretty slick. It's packed with useful features, too. Unfortunately this app is not available for macOS.
+Use **foobar2000**. It looks pretty ugly out of the box, but it is free, it is lighting fast, and you can use custom themes that make it look pretty slick. It's packed with useful features, too. Unfortunately this app is not available for MacOS.
 
