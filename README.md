@@ -27,27 +27,23 @@ If you do want to use `ydm-metadata`:
 
   * Make sure your version of `python3` is python3.6+. Check this with `python3 --version`. The `ydm-metadata` script has f-strings, which are a python 3.6+ feature.
   * Run the `ydm-install` command. This installs the python packages needed for `ydm-metadata` (see below) and creates a file named `.config` in the `youtube-dl-music` directory.
-  * Create an account with [Discogs](https://www.discogs.com/users/create) and another account with [MusicBrainz](https://musicbrainz.org/register?uri=%2Fdoc%2FHow_to_Create_an_Account). Discogs and MusicBrainz are the two major online discography databases, each with their strengths and weaknesses each with public python APIs. So, why not use both? :)
-  * After creating the Discogs account, click on the top-right profile image and to Settings --> Developer, then click the "Generate token" button.
+  * Create an account with [Discogs](https://www.discogs.com/users/create) and another account with [MusicBrainz](https://musicbrainz.org/register?uri=%2Fdoc%2FHow_to_Create_an_Account). After creating the Discogs account, click on the top-right profile image and to Settings --> Developer, then click the "Generate token" button. Discogs and MusicBrainz are the two major online discography databases, each with their own strengths and weaknesses, and each with their own public python APIs. Therefore, this program uses both!
   * Fill the `.config` file with your desired destination folder, your Discogs token, your MusicBrainz username, and your MusicBrainz password (make sure the password is not an important one).
 
 # Dependencies
-## Non-Python
-  * [ffmpeg](https://github.com/FFmpeg/FFmpeg): Batteries-included package for creating/modifying media files. I recommend using [MacPorts](https://www.macports.org) to install using `sudo port install ffmpeg +nonfree`. The `+nonfree` flag is required to add the proprietary `libfdk_aac` AAC encoding package, which is [superior](https://trac.ffmpeg.org/wiki/Encode/AAC) to the equivalent free package.
+The only non-python dependency is [ffmpeg](https://github.com/FFmpeg/FFmpeg). This is a batteries-included package for creating/modifying media files. I recommend using [MacPorts](https://www.macports.org) to install using `sudo port install ffmpeg +nonfree`. The `+nonfree` flag is required to add the proprietary `libfdk_aac` AAC encoding package, which is [superior](https://trac.ffmpeg.org/wiki/Encode/AAC) to the equivalent free package.
 
-## Python
-The below are all installed by the `ydm-install` command (see the "Installation" section).
+The remaining dependencies are python packages. The below packages are all installed by the `ydm-install` command and listed in [requirements.txt](requirements.txt).
 
-  * [youtube-dl](https://github.com/rg3/youtube-dl): script for downloading youtube media.
-  * [ffmpeg-normalize](https://github.com/slhck/ffmpeg-normalize): python package for normalizing volume, requires ffmpeg accessible from shell.
-  <!-- ; `pip install ffmpeg-normalize`. -->
-  * [mutagen](https://github.com/quodlibet/mutagen): for writing metadata.
-  * [musicbrainzngs](https://github.com/alastair/python-musicbrainzngs): for interacting with MusicBrainz database.
-  * [discogs_client](https://github.com/discogs/discogs_client): for interacting with Discogs database.
-  * [BeautifulSoup](https://pypi.python.org/pypi/beautifulsoup4): for parsing the "release group" HTML webpage and finding any linked discogs "master releases". Necessary because there is no way of retrieving this link from the MusicBrainz API directly.
-  * [pandas](https://github.com/pandas-dev/pandas): for inputting/outputting tabulated data.
-  * [Python Imaging Library](https://pypi.python.org/pypi/PIL): for warping cover art images to square.
-  * [unidecode](https://pypi.python.org/pypi/Unidecode): for translating accented characters to ASCII, so you don't have to get accents perfectly correct in your filename.
+  * [BeautifulSoup](https://pypi.python.org/pypi/beautifulsoup4): For parsing the "release group" HTML webpage and finding any linked discogs "master releases".
+  * [Python Imaging Library](https://pypi.python.org/pypi/PIL): For warping cover art images to square.
+  * [discogs_client](https://github.com/discogs/discogs_client): For interacting with Discogs database.
+  * [ffmpeg-normalize](https://github.com/slhck/ffmpeg-normalize): Python package for normalizing volume, requires ffmpeg accessible from shell.
+  * [musicbrainzngs](https://github.com/alastair/python-musicbrainzngs): For interacting with MusicBrainz database.
+  * [mutagen](https://github.com/quodlibet/mutagen): For writing metadata.
+  * [pandas](https://github.com/pandas-dev/pandas): For saving tabulated user response data.
+  * [unidecode](https://pypi.python.org/pypi/Unidecode): For translating accented characters to ASCII.
+  * [youtube-dl](https://github.com/rg3/youtube-dl): Script for downloading youtube media.
 
 # Usage
 ## Download script
@@ -80,23 +76,21 @@ In some cases, the tagging algorithm fails with `-s` -- e.g. a search for "Aeros
 Here's a play-by-play of what `ydm-metadata` does:
 
 1. Run strict search of MusicBrainz "recordings" matching the *filename-inferred* track name and with artist credits matching the *filename-inferred* artist name. Choose the first credit artist, and ask for user input if the first credit artists in the release list differ.
-    * Allows for names starting with or without "the" (e.g. "Animals" vs. "The Animals" - you can choose to forego the "the", and this way the music in your filesystem will be sorted more naturally).
+    * Allows for names starting with or without "the" (e.g. "Animals" vs. "The Animals"). If you forego the "the", the music files in your filesystem will appear sorted more naturally.
     * Allows for names ending with "&" or "and" something (e.g. "Tom Petty *and the Heartbreakers*").
-    * Write "artist" metadata according to the search results.
+    * Writes "artist" metadata according to the search results, rather than as it appears in the filename.
 2. Verify the recordings returned, eliminate some matches but permit others. In general, make sure "meaningful words" in the discovered recording names match the filename-inferred song name.
     * Ignores "Atom Heart Mother" or "Matilda Mother" but allows "Mother".
     * Allows "The Wall (part 1)" or "The Wall (part i)" for search for "The Wall".
     * Allows "Hush / I'm Alive" in search for "Hush" by choosing optional match on stuff either side of "/".
 3. Get release "groups" from the release list belonging to each recording, and consolidate the recordings (sorted by unique ID) into their corresponding release groups.
-    * Sort the release groups first according to a ranking scheme. Every release group has an associated "category", so try to pick singles and albums over compilations or live performances. Also try to pick release groups with releases from earlier years (which are more likely to be "original" versions).
+    * Sorts the release groups first according to a ranking scheme. Every release group has an associated "category", so try to pick singles and albums over compilations or live performances.
+    * Tries to pick release groups with releases from *earlier years* rather than later years. These are more likely to be "original" versions.
 4. Get several *album-related* metadata categories from our ordered hierarchy of releases belonging to unique release groups.
-    * Write "year" metadata from the earliest release amongst all members of *all* release groups.
-    * Write "album name" metadata from the earliest release amongst all members of the highest-ranked release group.
-    * Write "genres" from the first release group in hierarchy for which genres are available.
-        * Retrieves the Discogs page of corresponding "master" by searching the MusicBrainz `html` webpage for a linked Discogs "master" ID (not currently implemented in the python API).
-        * Also write "genres" from the MusicBrainz "tags" associated with individual recordings.
-        * Permitted names are the Discogs "styles" found in the `genrelist` file. Does not allow overly generic names like "rock" and "pop".
-    * Write "cover art" metadata from the most *modern* release and most *modern* release format amongst releases in the highest-ranked release group. This gets the nicest-looking cover art available. If `--confirm` was passed, user can choose to bypass release groups/releases for artwork.
+    * Writes "year" metadata from the earliest release amongst all members of *all* release groups.
+    * Writes "album" metadata from the highest-ranked release group containing the earliest release years.
+    * Write "genres" from the first release group in the hierarchy for which genres are available. Genres are obtained from both MusicBrainz and the Discogs "master" recording (found by searching the MusicBrainz HTML webpage for a Discogs URL). MusicBrainz genres are translated and filtered to the limited subset used by Discogs.
+    * Write "cover art" metadata from the latest release and most *modern* release format amongst releases in the highest-ranked release group. This gets the nicest-looking cover art available. If `--confirm` was passed, you can choose to bypass certain release groups and releases.
 
 # Software suggestions
 ## Mac
