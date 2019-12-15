@@ -74,7 +74,7 @@ In some cases, the tagging algorithm fails with `-s` -- e.g. a search for "Aeros
 
 `ydm-metadata` is certainly not the fastest tagging algorithm out there. For example, the builtin cover art downloader for the Android app "PowerAmp" is pretty darn fast. `ydm-metadata` is designed to strictly *minimize tagging errors*, and get the *highest possible quality cover art*. So, it is slow, but very accurate.
 
-## More on metadata script
+## Metadata script algorithm
 `Mutagen` is used to write tags. For `mp3` files, tags are added to the ID3 header, while for `aac` and `m4a` files, tags are added in some mysterious way that Apple pioneered (but should still be readable by most media players).
 
 Here's a play-by-play of what `ydm-metadata` does:
