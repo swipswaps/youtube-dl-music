@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 usage="ydm [OPTION...] URL ARTIST - TITLE"
 doc="
-This script downloads, normalizes, and tags audio from arbitrary youtube
-videos. It performs the following 3 steps:
-
-* Downloads youtube audio from URL into the native format with the highest
-  bitrate -- usually an OOG (webm) file.
-* Normalizes the audio volume and re-compresses into an AAC (m4a) file -- AAC
-  is used because it matches the compression of mp3 but with much improved
-  audio quality for marginal bitrates.
-* Tags the audio based on the ARTIST and TITLE. The tagging script does
-  various fuzzy searching things to get the album title, album artwork,
-  earliest release year, and album genre(s).
-
 Usage
 
   $usage
+
+Description
+
+  This script downloads, normalizes, and tags audio from arbitrary youtube
+  videos. It performs the following 3 steps:
+
+  * Downloads youtube audio from URL into the native format with the highest
+    bitrate -- usually an OOG (webm) file.
+  * Normalizes the audio volume and re-compresses into an AAC (m4a) file -- AAC
+    is used because it matches the compression of mp3 but with much improved
+    audio quality for marginal bitrates.
+  * Tags the audio based on the ARTIST and TITLE. The tagging script does
+    various fuzzy searching things to get the album title, album artwork,
+    earliest release year, and album genre(s).
 
 Required arguments
 
