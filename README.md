@@ -45,14 +45,24 @@ The remaining dependencies are python packages. The below packages are all insta
   * [unidecode](https://pypi.python.org/pypi/Unidecode): For translating accented characters to ASCII.
   * [youtube-dl](https://github.com/rg3/youtube-dl): Script for downloading youtube media.
 
-# Usage
+# Documentation
+For details, try
+
+```sh
+ydm --help
+ydm-metadata --help
+```
+
+Below is a broad overview.
+
 ## Download script
+This is the main script for downloading music. Usage is as follows:
 
     ydm [flags] URL artist name - song title
 
 Everything after 'URL' is interpreted as part of the destination filename. The `-` is syntactically meaningful -- it indicates the separation between the artist name and the song title. This information is passed to `ydm-metadata` to tag the file.
 
-**Important**: If  `ydm` **stops working**, it is often because `youtube.com` has changed how they store video/audio. The `youtube-dl` developers are very active and usually will release an updated version within a couple days. Just call `youtube-dl -U` or `pip install --upgrade youtube-dl` (depending on how it was installed), and it should start working again.
+**Important**: If  `ydm` stops working, it is often because `youtube.com` has changed how they store video/audio. The `youtube-dl` developers are very active and usually will release an updated version within a couple days. Just call `youtube-dl -U` or `pip install --upgrade youtube-dl` (depending on how it was installed), and it should start working again.
 
 ## Metadata script
 The `ydm-metadata` script is called automatically by `ydm`, but you may want to use it or re-use it on existing files. Usage is as follows:
@@ -63,8 +73,8 @@ This time the filename(s) must have escaped spaces. The following command-line o
 
 * `-v`: Increases verbosity.
 * `-s`: Enables strict mode. Makes sure recording name matches input title name exactly.
-* `-f`: Enables forget mode. By default, previous user responses to ambiguous artist names are cached in the CSV file `choices`. This disables caching and lookup.
-* `-c`: Enables confirm mode. By default, the algorithm prefers newer releases of type "album" and "single" for album artwork. This prompts user to always confirm the release/release group for album artwork.
+* `-f`: Enables forget mode. This disables caching and looking up previous user responses.
+* `-c`: Enables confirm mode. This prompts user to always confirm the release group and release for album artwork.
 
 In some cases, the tagging algorithm fails with `-s` -- e.g. a search for "Aerosmith - Dude Looks Like A Lady" filters out titles "Dude (Looks Like A Lady)" with parentheses, because parentheses often contain additional information unrelated to the song title. But in other cases it may be necessary -- e.g. without `-s`, a search for "Pink Floyd - Mother" also returns "Pink Floyd - Matilda Mother".
 
@@ -75,7 +85,8 @@ In some cases, the tagging algorithm fails with `-s` -- e.g. a search for "Aeros
 
 Here's a play-by-play of what `ydm-metadata` does:
 
-1. Run strict search of MusicBrainz "recordings" matching the *filename-inferred* track name and with artist credits matching the *filename-inferred* artist name. Choose the first credit artist, and ask for user input if the first credit artists in the release list differ.
+1. Run strict search of MusicBrainz "recordings" matching the *filename-inferred* track name and with artist credits matching the *filename-inferred* artist name.
+    * Chooses the first credit artist, and ask for user input if the first credit artists in the release list differ.
     * Allows for names starting with or without "the" (e.g. "Animals" vs. "The Animals"). If you forego the "the", the music files in your filesystem will appear sorted more naturally.
     * Allows for names ending with "&" or "and" something (e.g. "Tom Petty *and the Heartbreakers*").
     * Writes "artist" metadata according to the search results, rather than as it appears in the filename.
@@ -86,7 +97,7 @@ Here's a play-by-play of what `ydm-metadata` does:
 3. Get release "groups" from the release list belonging to each recording, and consolidate the recordings (sorted by unique ID) into their corresponding release groups.
     * Sorts the release groups first according to a ranking scheme. Every release group has an associated "category", so try to pick singles and albums over compilations or live performances.
     * Tries to pick release groups with releases from *earlier years* rather than later years. These are more likely to be "original" versions.
-4. Get several *album-related* metadata categories from our ordered hierarchy of releases belonging to unique release groups.
+4. Get several *album-related* metadata categories from our ordered hierarchy of releases belonging to unique release groups. This is the most important step.
     * Writes "year" metadata from the earliest release amongst all members of *all* release groups.
     * Writes "album" metadata from the highest-ranked release group containing the earliest release years.
     * Write "genres" from the first release group in the hierarchy for which genres are available. Genres are obtained from both MusicBrainz and the Discogs "master" recording (found by searching the MusicBrainz HTML webpage for a Discogs URL). MusicBrainz genres are translated and filtered to the limited subset used by Discogs.
