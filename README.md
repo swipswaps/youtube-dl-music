@@ -92,14 +92,3 @@ Here's a play-by-play of what `ydm-metadata` does:
     * Write "genres" from the first release group in the hierarchy for which genres are available. Genres are obtained from both MusicBrainz and the Discogs "master" recording (found by searching the MusicBrainz HTML webpage for a Discogs URL). MusicBrainz genres are translated and filtered to the limited subset used by Discogs.
     * Write "cover art" metadata from the latest release and most *modern* release format amongst releases in the highest-ranked release group. This gets the nicest-looking cover art available. If `--confirm` was passed, you can choose to bypass certain release groups and releases.
 
-# Software suggestions
-## Mac
-Use **Swinsian** instead of iTunes for playback. Swinsian costs \$20, but IMO it is really worth it. The two iTunes dealbreakers for me were:
-
-  1. iTunes can't "watch" folders while open (i.e. automatically add and remove songs as they appear/disappear from a folder). The only hope is some complicated hack involving the "Automatically add to iTunes" folder (personally I couldn't get this to work; perhaps one must restart iTunes every time or tell it manually to rescan this folder).
-  2. Browsing between files is difficult (cannot type out the name of an artist/song/filename and have
-  the cursor jump to that row [and when trying to do that, get inexplicable slowdown]; also there is no filename column).
-
-## Windows
-Use **foobar2000**. It looks pretty ugly out of the box, but it is free, it is lighting fast, and you can use custom themes that make it look pretty slick. It's packed with useful features, too. Unfortunately this app is not available for MacOS.
-
