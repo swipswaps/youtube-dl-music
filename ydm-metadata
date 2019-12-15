@@ -63,6 +63,14 @@ parser.add_argument(
     ),
 )
 parser.add_argument(
+    '-v',
+    '--verbose',
+    action='store_const',
+    const=True,
+    default=False,
+    help='Increase the verbosity.'
+)
+parser.add_argument(
     '-c',
     '--confirm',
     action='store_const',
@@ -706,13 +714,15 @@ def yes_no():
     Request and parse user 'yes' and 'no' input.
     """
     while True:  # just keep going until get valid one
-        response = input('Confirm (y/n)?')
-        if len(response) > 0:
-            if response[0].lower() == 'n':
-                return False  # continue?
-            elif response[0].lower() == 'y':
-                return True  # continue?
-        print('Invalid choice.')
+        response = input('Confirm ([y]/n)?')
+        if not response.strip():
+            response = 'y'
+        if response[0].lower() == 'n':
+            return False  # continue?
+        elif response[0].lower() == 'y':
+            return True  # continue?
+        else:
+            print('Invalid choice.')
 
 
 def find_urls(page):
@@ -922,10 +932,8 @@ def album_musicbrainz(recordings):
                     #   are unrestricted) to number of discogs genres
                     #   (which are standardized to certain values).
                     added = set()
-                    if args.classical:
-                        dgenres = ['Classical']
-                        mgenres = []
-                    else:
+                    genres = []
+                    if not args.classical:
                         dgenres = [
                             genre
                             for genre in genres_discogs(group['id'])
@@ -1347,18 +1355,19 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
             new_recordings = [None]  # to reset list
             try:  # try the search again
                 if round2:
-                    raise KeyError  # jup ahead
+                    raise KeyError  # jump ahead
                 new_recording = mb.search_recordings(
                     recording, artist=artist, strict=False, limit=50
                 )['recording-list'][0]
                 artist = new_recording['artist-credit'][0]['artist']['name']
                 recording = new_recording['title']
             except (IndexError, KeyError):  # no results or something
-                raise ValueError(
+                print(
                     'No recordings found. You might have a typo '
                     'in your artist or title name. Tried to repair typo with '
                     'non-strict search, with no luck.'
                 )
+                return artist_orig, []
             print(
                 f'Search failed. Try again with artist {artist!r} and '
                 f'recording name {recording!r}?'
@@ -1369,10 +1378,11 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
                 round2 = True
     # Lists
     if not recordings:
-        raise ValueError(
+        print(
             'No recordings found. '
             'You might have a typo in your title or artist name.'
         )
+        return artist_orig, []
     rec_artists = [
         irecording['artist-credit'][0]
         for irecording in recordings
@@ -1396,9 +1406,10 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
         and not uq_artist_ids.add(rec_artist.get('id', ''))
     ]
     if not uq_artists:
-        raise ValueError(
-            "No recordings found. You might have a typo in your artist name."
+        print(
+            'No recordings found. You might have a typo in your artist name.'
         )
+        return artist_orig, []
     if len(uq_artists) > 1:
         # There is more than one unique artist in the list; we must pick one
         # Load the config file, and see if a previous response is in there
@@ -1487,15 +1498,17 @@ url = args.url
 for path in args.path:
     # Get artist and title from file
     if not os.path.exists(path):
-        raise FileNotFoundError(f"File {path!r} does not exist.")
+        print(f'Error: File {path!r} does not exist.')
+        continue
     basename, _ = os.path.splitext(os.path.basename(path))
     # non greedy so we get rid of spaces
     match = re.match(r'\A\s*(.*?)\s+-\s+(.*?)\s*\Z', basename)
     if not match:
-        raise RuntimeError(
-            f'File {os.path.basename(path)!r} must look like '
+        print(
+            f'Error: File {os.path.basename(path)!r} must look like '
             '"ARTIST - TITLE".ext'
         )
+        continue
     artist, title = match.groups()
 
     # Open file, for different types
@@ -1518,6 +1531,8 @@ for path in args.path:
         title = recordings[0]['title']  # use track title
         props = album_musicbrainz(recordings)
     props = props or {'title': '', 'year': '', 'genres': None, 'image': None}
+    if args.classical:  # override
+        props['genres'] = ['Classical']
     genres = ', '.join(props['genres'] or [])
     print(
         f'Album {props["title"]!r} ({props["year"]}'
