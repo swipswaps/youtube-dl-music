@@ -1,59 +1,21 @@
-# Sensitive content
-ctags
-config
-learning
-choices
+# Configuration file
+.config
 
-# Ignore
+# Library
 *.tex
 *.ipynb
 
 # VIM extras
 *Icon[]
-*.session.vim
 *.vimsession
 .*.sw[a-z]
 
-# Old stuff
-test*
-old/
-trash/
-garbage/
-garb/
-
-# Storage and Python
+# Python stuff
+*.pyc
 __pycache__/
 .ipynb_checkpoints/
-
-# Compiled source
-# Includes fortran and python source, and some
-# windows stuff
-*.com
-*.class
-*.dll
-*.exe
-*.so
-*.o
-*.pyc
-*.pyo
-
-# Packages
-*.7z
-*.dmg
-*.gz
-*.iso
-*.jar
-*.rar
-*.tar
-*.zip
-
-# Logs and databases
-*.log
-*.sql
-*.sqlite
 
 # OS generated files
 *.DS_Store
 *.DS_Store?
-*.Trashes
 *._*
