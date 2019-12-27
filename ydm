@@ -52,7 +52,6 @@ raise() {
   exit 1
 }
 # Parse input
-mp3=false   # mp3 or m4a by default?
 quick=0     # 1 means skip metadata, 2 means skip normalization
 metadata=true   # by default, retrieve metadata and noarmalize
 classical=false # different folder for classical music
@@ -73,7 +72,6 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-$mp3 && ext_new="mp3" || ext_new="m4a"
 $classical && metaflags+="--classical"  # override the genre tag
 
 #-----------------------------------------------------------------------------#
@@ -113,11 +111,14 @@ $classical && directory="${directory%/*}/classical"
 [ -d "$directory" ] || raise "Output directory \"$directory\" does not exist or is not a directory."
 
 # MP3 or M4A?
-mp3="$(cat "$config" | grep "mp3" | cut -s -d '=' -f 2 | tr [A-Z] [a-z] | xargs)"
-[ -n "$mp3" ] || mp3=false
-if ! [[ "$mp3" == "true" || "$mp3" == "false" ]]; then
-  raise "Value 'mp3' in .config file must be either 'true' or 'false'."
+if [ -z "$mp3" ]; then
+  mp3="$(cat "$config" | grep "mp3" | cut -s -d '=' -f 2 | tr [A-Z] [a-z] | xargs)"
+  [ -n "$mp3" ] || mp3=false
+  if ! [[ "$mp3" == "true" || "$mp3" == "false" ]]; then
+    raise "Value 'mp3' in .config file must be either 'true' or 'false'."
+  fi
 fi
+$mp3 && ext_new="mp3" || ext_new="m4a"
 
 # A few basic settings
 # TODO: Support for downloading entire playlists or albums
@@ -131,7 +132,7 @@ flags="-q -f bestaudio --no-playlist"
 # Download, using youtube-dl
 #------------------------------------------------------------------------------#
 echo "Determining filetype."
-path="$(youtube-dl --get-filename $flags "$url" -o "$path_template")" # no playlist, in case user provides playlist URL
+path=$(youtube-dl --get-filename $flags "$url" -o "$path_template") # no playlist, in case user provides playlist URL
 [ -n "$path" ] || raise "Download failed."
 ext="${path##*.}"
 echo "Downloading."
@@ -159,12 +160,12 @@ bitrate=$((bitrate*3/2))
 
 # Save to m4a, uses highest quality encoder
 if ! $mp3; then
-  echo "Normalizing volume, outputing to m4a."
+  echo "Normalizing volume and saving to m4a."
   ffmpeg-normalize "$path" $normflags "$trimflag" -f -c:a libfdk_aac -b:a ${bitrate}k -o "$path_normalized"
   [ $? -eq 0 ] || raise "Normalization failed."
 # Save to mp3
 else
-  echo "Normalizing volume, outputing to mp3."
+  echo "Normalizing volume and saving to mp3."
   ffmpeg-normalize "$path" $normflags "$trimflag" -f -c:a libmp3lame -b:a ${bitrate}k -o "$path_normalized"
   [ $? -eq 0 ] || raise "Normalization failed."
 fi
