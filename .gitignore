@@ -1,5 +1,6 @@
 # Configuration file
 .config
+.choices
 
 # Library
 *.tex
