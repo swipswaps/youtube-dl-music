@@ -1550,7 +1550,11 @@ for path in args.path:
         tags['TALB'] = TALB(text=props['title'])  # album
         tags['TOAL'] = TOAL(text=props['title'])  # original album
         if props['image']:
-            tags["APIC"] = APIC(data=props['image'])
+            tags['APIC'] = APIC(
+                data=props['image'],
+                mime='image/jpeg',
+                type=3, desc='Cover',
+            )
         elif 'APIC' in tags:
             del tags['APIC']
         if props['genres']:
