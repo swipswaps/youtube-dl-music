@@ -99,16 +99,25 @@ echo "URL: $url"
 [ -n "$name" ] || raise "Must supply artist and title."
 echo "Name: \"$name\""
 
-# Download directory
-# Note 'cut' will automatically trim leading/trailing whitespace it seems
+# Configuration file
 config=$(dirname $(realpath $0))/.config
 [ -r "$config" ] || raise "Config file \"$config\" not found."
+
+# Download directory
+# Note 'cut' will automatically trim leading/trailing whitespace it seems
 directory="$(cat "$config" | grep "directory" | cut -s -d '=' -f 2 | xargs)"
 directory="${directory/"~"/$HOME}" # don't expand spaces, but expand ~
 directory="${directory%/}" # trim trailing slash if present
 $classical && directory="${directory%/*}/classical"
 [ -n "$directory" ] || raise "Output directory must be declared in the \"$config\" file with 'directory=DIRECTORY'."
 [ -d "$directory" ] || raise "Output directory \"$directory\" does not exist or is not a directory."
+
+# MP3 or M4A?
+mp3="$(cat "$config" | grep "mp3" | cut -s -d '=' -f 2 | tr [A-Z] [a-z] | xargs)"
+[ -n "$mp3" ] || mp3=false
+if ! [[ "$mp3" == "true" || "$mp3" == "false" ]]; then
+  raise "Value 'mp3' in .config file must be either 'true' or 'false'."
+fi
 
 # A few basic settings
 # TODO: Support for downloading entire playlists or albums
