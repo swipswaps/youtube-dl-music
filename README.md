@@ -58,16 +58,25 @@ Below is a broad overview.
 ## Download script
 This is the main script for downloading music. Usage is as follows:
 
-    ydm [flags] URL artist name - song title
+```bash
+ydm [flags] URL ARTIST NAME - SONG TITLE  # inside the main directory
+ydm [flags] URL ARTIST NAME/SONG TITLE  # inside an artist subdirectory
+```
 
-Everything after 'URL' is interpreted as part of the destination filename. The `-` is syntactically meaningful -- it indicates the separation between the artist name and the song title. This information is passed to `ydm-metadata` to tag the file.
+Everything after 'URL' is interpreted as part of the destination location.
+The `ARTIST NAME - SONG TITLE` usage places the file loose inside your music folder.
+The `ARTIST NAME/SONG TITLE` usage places the file inside a *subdirectory* specific
+to the artist. This file naming convention is *necessary* for `ydm-metadata` to
+tag the file.
 
 **Important**: If  `ydm` stops working, it is often because `youtube.com` has changed how they store video/audio. The `youtube-dl` developers are very active and usually will release an updated version within a couple days. Just call `youtube-dl -U` or `pip install --upgrade youtube-dl` (depending on how it was installed), and it should start working again.
 
 ## Metadata script
 The `ydm-metadata` script is called automatically by `ydm`, but you may want to use it or re-use it on existing files. Usage is as follows:
 
-    ydm-metadata [flags] file1 [file2 ...]
+```bash
+ydm-metadata [FLAGS] PATH1 [PATH2 ...]
+```
 
 This time the filename(s) must have escaped spaces. The following command-line options are available:
 

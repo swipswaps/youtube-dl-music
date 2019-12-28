@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 This script adds metadata tags from the MusicBrainz and Discogs databases
-for audio files that look like 'ARTIST - TITLE.mp3' or 'ARTIST - TITLE.m4a'.
-If the file is AAC/MP4, the special MP4 metadata specification is used.
-Otherwise, the ID3v2.4 header is used. There are several dependencies -- see
+for audio files. If the file is AAC/MP4, the special MP4 metadata specification
+is used. Otherwise, e.g. for MP3 files, the ID3v2.4 header is used. There are
+several dependencies -- see
 https://github.com/lukelbd/youtube-dl-music for details.
 """
 # TODO: Pull cover art from Discogs master-release info if it is available;
@@ -14,43 +14,29 @@ https://github.com/lukelbd/youtube-dl-music for details.
 # (usually to fix the weird MusicBrainz results) and artist name verification.
 # For the former, could just get Discogs genre from *every available Master
 # release* from the groups of recordings.
-import re
-import os
-import argparse
-import pandas as pd
-import requests
-import discogs_client
-import musicbrainzngs as mb
-from mutagen.mp4 import MP4, MP4Cover, MP4StreamInfoError
-from mutagen.id3 import (
-    ID3,
-    ID3NoHeaderError,
-    TIT2,
-    TPE1,
-    TCON,
-    TALB,
-    TOAL,
-    TDRC,
-    TDOR,
-    TDRL,
-    APIC,
-    COMM,
-)
-from musicbrainzngs.musicbrainz import ResponseError
-from bs4 import BeautifulSoup
-from io import BytesIO
-from PIL import Image
-
-# ------------------------------------------------------------------------------#
-# Configure
-# ------------------------------------------------------------------------------#
 # Require running as script because has required args anyway
 if __name__ != '__main__':
     raise RuntimeError('This file can only be invoked as a script.')
 
-# Parse command line args
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('path', type=str, nargs='+', help='The file path(s).')
+# Parse command line args *first* so ydm-metadata --help is fast
+import argparse
+parser = argparse.ArgumentParser(description=__doc__, add_help=False)
+parser.add_argument(
+    'path',
+    type=str,
+    nargs='+',
+    help=(
+        "The file path(s). Each file should be formatted 'ARTIST - TITLE.ext'"
+        "or 'ARTIST/TITLE.ext'. In the latter case, ARTIST is a subdirectory"
+        "dedicated for songs by that artist."
+    ),
+)
+parser.add_argument(
+    '-h',
+    '--help',
+    action='help',
+    help='Show this help message and exit.'
+)
 parser.add_argument(
     '-s',
     '--strict',
@@ -105,6 +91,33 @@ parser.add_argument(
     help='Override the automatic genre tags with the single tag "Classical".',
 )
 args = parser.parse_args()
+
+import re
+import os
+import pandas as pd
+import requests
+import discogs_client
+import musicbrainzngs as mb
+from mutagen.mp4 import MP4, MP4Cover, MP4StreamInfoError
+from mutagen.id3 import (
+    ID3,
+    ID3NoHeaderError,
+    TIT2,
+    TPE1,
+    TCON,
+    TALB,
+    TOAL,
+    TDRC,
+    TDOR,
+    TDRL,
+    APIC,
+    COMM,
+)
+from musicbrainzngs.musicbrainz import ResponseError
+from bs4 import BeautifulSoup
+from io import BytesIO
+from PIL import Image
+
 
 # Read config file
 sdir = os.path.dirname(os.path.realpath(__file__))
@@ -1313,15 +1326,13 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
     search MusicBrainz for the artist and recordings corresponding to input.
     Tries to do this intelligently, and account for some rare special cases.
     """
-    # Premature track and artist filtering, so the "strict search" will give
-    # reasonable results.
+    # Premature track and artist filtering, so the "strict search"
+    # will give reasonable results.
     artist_orig = artist
-    # get first artist in name; they will be credited separately
-    artist = artist.split('ft.')[0]
+    artist = artist.split('ft.')[0]  # get first artist in name
     recording = recording.split('+')[0]  # get first song in combo
-    # delete stuff in parentheses
-    recording = re.sub(r"\(.*\)", " ", recording)
-    recording = " ".join(recording.split())  # single spaces only
+    recording = re.sub(r'\(.*\)', ' ', recording)  # remove parens
+    recording = ' '.join(recording.split())  # single spaces only
 
     # (Step 0) Search the database with a strict search, results should be
     # pretty darn good Results will have list of artist dictionaries under the
@@ -1405,11 +1416,13 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
         if rec_artist.get('id', '') not in uq_artist_ids
         and not uq_artist_ids.add(rec_artist.get('id', ''))
     ]
+
     if not uq_artists:
         print(
             'No recordings found. You might have a typo in your artist name.'
         )
         return artist_orig, []
+
     if len(uq_artists) > 1:
         # There is more than one unique artist in the list; we must pick one
         # Load the config file, and see if a previous response is in there
@@ -1419,25 +1432,24 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
                 f"({uq_artist.get('disambiguation','')})".split('()')[0]
             )
         try:
-            df = pd.read_csv(choices, index_col=0, header=0, dtype=str)
+            df = pd.read_csv(choices, index_col=0, dtype=str)
         except FileNotFoundError:
-            df = pd.DataFrame(index=[], columns=['choice'])
-        # Requires new user response
+            df = pd.DataFrame()
+        # Load old user response
         if (
             not args.forget and artist in df.index.values
-        ):  # load previous user response
+        ):
             ids = df.loc[artist].values[0].split(',')  # list of ids user chose
             response = [
                 c + 1
                 for c, uq_artist in enumerate(uq_artists)
                 if uq_artist.get('id', '') in ids
             ]
-            # the last choices
             print(
                 f'Loaded previous response: '
                 + ','.join(str(c) for c in response) + '.'
             )
-        # Get and save user response
+        # Get and save new user response
         else:
             response = None
             while response is None:
@@ -1447,19 +1459,18 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
                 response = user_choice(response, len(uq_artists))
             ids = ','.join(uq_artists[c - 1].get('id', '') for c in response)
             df.loc[artist] = ids  # add ids to dataframe
-            df.to_csv()
-        recordings = [
+            df.to_csv(choices, header=False)
+        recordings = [  # filter to user selected choice
             irecording
             for irecording, recartistid in zip(recordings, rec_artists_ids)
             if recartistid in ids
-        ]  # make sure they are in user-selected choice
+        ]
     else:
-        # Don't need a list of possible ids; just use the only one left
-        recordings = [
+        recordings = [  # filter to user selected choice
             irecording
             for irecording, recartistid in zip(recordings, rec_artists_ids)
             if recartistid == uq_artists[0].get('id', '')
-        ]  # make sure they are in user-selected choice
+        ]
 
     # (Step 2) Filter out bad/unwanted recordings. Make sure to compare
     # standardized names so no rejection due to capitalization/punctuation.
@@ -1501,15 +1512,21 @@ for path in args.path:
         print(f'Error: File {path!r} does not exist.')
         continue
     basename, _ = os.path.splitext(os.path.basename(path))
-    # non greedy so we get rid of spaces
     match = re.match(r'\A\s*(.*?)\s+-\s+(.*?)\s*\Z', basename)
-    if not match:
+    subdir = os.path.basename(os.path.dirname(os.path.abspath(path)))
+    if match:
+        artist, title = match.groups()
+    elif (
+        subdir != os.path.expanduser(config['directory'])
+        and subdir.lower() not in ('music', 'playlist', 'songs')
+    ):
+        artist, title = subdir, basename
+    else:
         print(
-            f'Error: File {os.path.basename(path)!r} must look like '
-            '"ARTIST - TITLE".ext'
+            f'Error: File {os.path.abspath(path)!r} must look like '
+            "'ARTIST - TITLE.ext' or 'ARTIST/TITLE.ext'."
         )
         continue
-    artist, title = match.groups()
 
     # Open file, for different types
     # Currently have compatibility with MP4 and ID3 tags
@@ -1570,8 +1587,7 @@ for path in args.path:
 
     # Edit as an AAC file
     else:
-        # artist; includes whether "The" is in front, best punctuation,
-        # etc.
+        # artist; includes whether "The" is in front, best punctuation, etc.
         tags['\xa9ART'] = [artist]
         tags['\xa9nam'] = [title]  # track name
         tags['\xa9day'] = [props['year']]
