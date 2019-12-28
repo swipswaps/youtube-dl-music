@@ -1544,18 +1544,18 @@ for path in args.path:
     # TODO: Use recording artist and title from *album*? Think these
     # must be identical.
     print(f'Retrieving metadata for {artist!r} - {title!r}.')
-    props = None
+    album = None
     recordings = recording_musicbrainz(artist, title)
     if recordings:
         artist = recordings[0]['artist-credit'][0]['artist']['name']
         title = recordings[0]['title']
-        props = album_musicbrainz(recordings)
-    props = props or {'title': '', 'year': '', 'genres': None, 'image': None}
+        album = album_musicbrainz(recordings)
+    album = album or {'title': '', 'year': '', 'genres': None, 'image': None}
     if args.classical:  # override
-        props['genres'] = ['Classical']
-    genres = ', '.join(props['genres'] or [])
+        album['genres'] = ['Classical']
+    genres = ', '.join(album['genres'] or [])
     print(
-        f'Album {props["title"]!r} ({props["year"]}'
+        f'Album {album["title"]!r} ({album["year"]}'
         f'{"; "*bool(genres)}{genres})'.split('()')[0].strip()
     )
 
@@ -1564,22 +1564,22 @@ for path in args.path:
     if id3:
         tags['TPE1'] = TPE1(text=artist)
         tags['TIT2'] = TIT2(text=title)  # just track name
-        tags['TDOR'] = TDOR(text=props['year'])  # original release time
-        tags['TDRC'] = TDRC(text=props['year'])  # recording time
-        tags['TDRL'] = TDRL(text=props['year'])  # release time
-        tags['TALB'] = TALB(text=props['title'])  # album
-        tags['TOAL'] = TOAL(text=props['title'])  # original album
-        if props['image']:
+        tags['TDOR'] = TDOR(text=album['year'])  # original release time
+        tags['TDRC'] = TDRC(text=album['year'])  # recording time
+        tags['TDRL'] = TDRL(text=album['year'])  # release time
+        tags['TALB'] = TALB(text=album['title'])  # album
+        tags['TOAL'] = TOAL(text=album['title'])  # original album
+        if album['image']:
             tags['APIC'] = APIC(
-                data=props['image'],
+                data=album['image'],
                 mime='image/jpeg',
                 type=3, desc='Cover',
             )
         elif 'APIC' in tags:
             del tags['APIC']
-        if props['genres']:
+        if album['genres']:
             tags['TCON'] = TCON(
-                text=props['genres'][0], genres=props['genres']
+                text=album['genres'][0], genres=album['genres']
             )
         elif 'TCON' in tags:
             del tags['TCON']
@@ -1593,16 +1593,16 @@ for path in args.path:
         # artist; includes whether "The" is in front, best punctuation, etc.
         tags['\xa9ART'] = [artist]
         tags['\xa9nam'] = [title]  # track name
-        tags['\xa9day'] = [props['year']]
-        tags['\xa9alb'] = [props['title']]  # album, from lookup
-        if props['image']:
+        tags['\xa9day'] = [album['year']]
+        tags['\xa9alb'] = [album['title']]  # album, from lookup
+        if album['image']:
             tags['covr'] = [
-                MP4Cover(props['image'], imageformat=MP4Cover.FORMAT_JPEG)
+                MP4Cover(album['image'], imageformat=MP4Cover.FORMAT_JPEG)
             ]
         elif 'covr' in tags:
             del tags['covr']
-        if props['genres']:
-            tags['\xa9gen'] = [*props['genres']]  # genres
+        if album['genres']:
+            tags['\xa9gen'] = [*album['genres']]  # genres
         elif '\xa9gen' in tags:
             del tags['\xa9gen']
         if url:
