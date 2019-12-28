@@ -158,7 +158,8 @@ client = discogs_client.Client('Personal', user_token=config['token'])
 
 # Preferred release group types for retrieving album name and artwork
 type_prefs = (
-    {'Album', 'Single'},
+    {'Album'},
+    {'Single'},
     {'EP'},
     {'Compilation', 'Other', 'Soundtrack', 'NA'},
     {'Live'},
