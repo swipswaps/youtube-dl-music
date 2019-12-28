@@ -1004,7 +1004,6 @@ def artwork_musicbrainz(releases):
     filter_known = [False for release in releases]
     for m, medium in enumerate(media_prefs):
         if medium == 'other':  # we are at the end; see if any media were left
-            # iterate over what's left
             filter_ = [not known for known in filter_known]
         else:  # filter, and add known media to lsit
             filter_ = [
@@ -1501,7 +1500,7 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
         )
 
     # Return results
-    return artist, recordings
+    return recordings
 
 
 # Loop through file
@@ -1541,11 +1540,14 @@ for path in args.path:
             raise RuntimeError('File {path!r} format is invalid.')
 
     # Call functions and apply metadata
+    # TODO: Use recording artist and title from *album*? Think these
+    # must be identical.
     print(f'Retrieving metadata for {artist!r} - {title!r}.')
     props = None
-    artist, recordings = recording_musicbrainz(artist, title)
+    recordings = recording_musicbrainz(artist, title)
     if recordings:
-        title = recordings[0]['title']  # use track title
+        artist = recordings[0]['artist-credit'][0]['artist']['name']
+        title = recordings[0]['title']
         props = album_musicbrainz(recordings)
     props = props or {'title': '', 'year': '', 'genres': None, 'image': None}
     if args.classical:  # override
