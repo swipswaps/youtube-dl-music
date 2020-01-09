@@ -158,11 +158,14 @@ client = discogs_client.Client('Personal', user_token=config['token'])
 
 # Preferred release group types for retrieving album name and artwork
 type_prefs = (
-    {'Album'},
-    {'Single'},
-    {'EP'},
-    {'Compilation', 'Other', 'Soundtrack', 'NA'},
-    {'Live'},
+    'Album',
+    'Single',
+    'EP',
+    'Compilation',
+    'Other',
+    'Soundtrack',
+    'Live',
+    'NA',
 )
 
 # Preferred media type for album name and artwork
@@ -173,7 +176,7 @@ media_prefs = (
     'dvd',
     'cassette',
     'vinyl',
-    'xxxxx',
+    'unknown',
     'other',
 )
 
@@ -723,9 +726,14 @@ discogs_genres = tuple(
 )
 
 
-def yes_no():
+def confirm_prompt():
     """
-    Request and parse user 'yes' and 'no' input.
+    Confirm prompt.
+
+    Returns
+    -------
+    response : bool
+        The user response.
     """
     while True:  # just keep going until get valid one
         response = input('Confirm ([y]/n)?')
@@ -739,46 +747,11 @@ def yes_no():
             print('Invalid choice.')
 
 
-def find_urls(page):
+def word_tuple(string):
     """
-    Get URL data from HTML lines. Each 'page.find' moves the
-    reader farther down the object.
+    Get a tuple of standardized words with accents, parentheticals, and
+    non-alphanumeric characters removed.
     """
-    start_link = page.find('a href')
-    if start_link == -1:
-        return None, 0
-    start_quote = page.find('"', start_link)
-    end_quote = page.find('"', start_quote + 1)
-    url = page[start_quote + 1: end_quote]
-    return url, end_quote
-
-
-def user_choice(choices, N):  # N is max possible number
-    """Parse user response."""
-    if len(choices) == 0:
-        print('Invalid choice.')
-        return
-    if choices == '0':
-        choices = [c + 1 for c in range(N)]
-    else:
-        try:
-            choices = [int(c) for c in choices.split(',')]
-        except TypeError:
-            print('Input must be integer.')
-            return
-    # Make sure they are all in valid range
-    if any(c < 0 for c in choices):
-        print('Integer must be >=0.')
-        return
-    if any(c > N for c in choices):
-        print(f'Integer must be <={N}.')
-        return
-    return choices
-
-
-def to_words(string):
-    """Standardize text by eliminating all non-alphanumeric characters,
-    parentheticals, and accents."""
     import unidecode
 
     iwords = []
@@ -796,20 +769,50 @@ def to_words(string):
         'ix',
     ]
     for istring in string.split('/'):
-        # plain ASCII letters from accents
-        istring = unidecode.unidecode(string)
+        istring = unidecode.unidecode(string)  # e.g. é --> e, ü --> u
         istring = re.sub("&", " and ", istring)
         istring = re.sub(r"\(.*\)", "", istring)
         istring = re.sub(r"“.*”", "", istring)
         istring = re.sub(r"[^\w\s]", " ", istring)
-        iwords += [
+        iwords.append(
             [
                 w
                 for w in istring.lower().split()
                 if w not in ignore_words and len(w) > 1
             ]
-        ]  # just add the words; the accounts for e.g. The Stooges
-    return iwords
+        )
+    return tuple(iwords)
+
+
+def album_sort_key(release_group):
+    """Sorting algorithm for selecting the 'best' release group. This can be
+    passed to `sorted` with ``key=lambda_sort``."""
+    type_ = type_prefs.index(release_group.get('type', 'NA'))
+    year = min(release_group['years'])  # start with early release years
+    count = -release_group['count']  # start with large counts
+    return type_, year, count
+
+
+def artwork_sort_key(release):
+    """Sorting algorithm for selecting the highest quality/most accurate
+    artwork in a release group. This can be passed to `sorted` with
+    ``key=lambda_sort``."""
+    media = [
+        medium.get('format', 'unknown').lower()
+        for medium in release.get('medium-list', [{}])
+    ]
+    for i, j in enumerate(media_prefs):
+        if j in media:
+            medium = i
+            break
+        if i == len(media_prefs) - 1:
+            medium = media_prefs.index('other')
+    year = -int(release.get('date', '0001')[:4] or '0001')  # prefer later
+    try:
+        country = anglo_countries.index(release.get('country', 'NA'))
+    except ValueError:
+        country = anglo_countries.index('other')
+    return medium, year, country
 
 
 def album_musicbrainz(recordings):
@@ -873,7 +876,6 @@ def album_musicbrainz(recordings):
         group['releases'] = greleases
         group['recordings'] = grecordings
         groups.append(group)
-    # Message
     print(
         f'Consolidated {len(releases):d} releases into {len(groups)} '
         f'release groups ({duplicates:d} duplicates removed).'
@@ -902,90 +904,73 @@ def album_musicbrainz(recordings):
     # same for genres
     year = str(min(min(group['years'], default=9999) for group in groups))
     year = '' if year == '9999' else year
+
     # Get some helper info: need to sort groups by earliest 'official' release
     # year among its release members, and by its type (album vs. single, etc.)
     metadata = {'year': year, 'image': None}
     title = image = None
-    for types in type_prefs:
-        print(f'Trying album types: {", ".join(map(repr, types))}.')
-        igroups = [
-            group for group in groups if group.get('type', 'NA') in types
-        ]
-        for firstyear in sorted(
-            set(min(group['years']) for group in igroups)
-        ):  # note min([None]) == None
-            jgroups = [
-                group for group in igroups if min(group['years']) == firstyear
+    for group in sorted(groups, key=album_sort_key):
+        # 1) Get album title and record it from the *preferred* group for
+        # artwork, whether or not it actually has artwork
+        # title = min((
+        #     title for title in group.get('titles', []) if
+        #     group.get('country','NA') in anglo_countries
+        #     ), key=len, default='')
+        title = group['title']
+        if 'title' not in metadata:
+            metadata['title'] = title
+
+        # 2) Get the genres, if haven't found them yet. Will prioritize
+        # Discogs genres but use MusicBrainz as backup
+        # * Discogs genres are from the Master release, not specific to song.
+        # * MusicBrainz genres are not from Master release, but instead from
+        # taglist in every recording belonging to the Master release.
+        # * Limit number of MusicBrainz genres (whose values are unrestricted)
+        # to number of discogs genres (which have standardized values).
+        added = set()
+        genres = []
+        if not args.classical:
+            dgenres = [
+                genre
+                for genre in genres_discogs(group['id'])
+                if genre not in added and not added.add(genre)
             ]
-            # Sort by number of releases in group
-            for count in sorted(
-                set(group['count'] for group in jgroups), reverse=True
-            ):
-                kgroups = [
-                    group for group in jgroups if group['count'] == count
-                ]
-                for group in kgroups:
-                    # 1) Get album title and record it from the
-                    # *preferred* group for artwork, whether or not it
-                    # actually has artwork, in case we cannot find any
-                    # title = min((
-                    #     title for title in group.get('titles', []) if
-                    #     group.get('country','NA') in anglo_countries
-                    #     ), key=len, default='')
-                    title = group['title']
-                    if 'title' not in metadata:
-                        metadata['title'] = title
-                    # 2) Get the genres, if haven't found them yet. Will
-                    # prioritize Discogs genres but use MusicBrainz as backup
-                    # * Discogs genres are from the Master release, not
-                    #   specific to song.
-                    # * MusicBrainz genres are not from Master release, but
-                    #   instead from taglist in every recording belonging to
-                    #   the Master release.
-                    # * Limit number of MusicBrainz genres (whose values
-                    #   are unrestricted) to number of discogs genres
-                    #   (which are standardized to certain values).
-                    added = set()
-                    genres = []
-                    if not args.classical:
-                        dgenres = [
-                            genre
-                            for genre in genres_discogs(group['id'])
-                            if genre not in added and not added.add(genre)
-                        ]
-                        mgenres = [
-                            genre
-                            for genre in genres_musicbrainz(group['recordings'])  # noqa
-                            if genre not in added and not added.add(genre)
-                        ]
-                        genres = dgenres + mgenres[: len(dgenres) or 3]
-                    if 'genres' not in metadata:
-                        metadata['genres'] = genres
-                    # 3) The album artwork. Confirm if user wants it
-                    # and print some related information
-                    years = [year for year in group['years'] if year != 9999]
-                    years = [-1] if len(years) == 0 else years
-                    if args.confirm or args.verbose:
-                        print(
-                            f'Group candidate: name(s) '
-                            + ', '.join(map(repr, group['titles']))
-                            + f', type {group.get("type", "NA")!r}'
-                            + f', count {group["count"]}'
-                            + f', earliest year {min(years)}'
-                            + f', latest year {max(years)}.'
-                        )
-                    if args.confirm and not yes_no():
-                        continue
-                    image = artwork_musicbrainz(group['releases'])
-                    if image is None:
-                        if args.verbose:
-                            print(
-                                f'No album artwork available for group '
-                                f'{group["title"]!r}.'
-                            )
-                        continue
-                    metadata.update(image=image, title=title, genres=genres)
-                    return metadata
+            mgenres = [
+                genre
+                for genre in genres_musicbrainz(group['recordings'])  # noqa
+                if genre not in added and not added.add(genre)
+            ]
+            genres = dgenres + mgenres[: len(dgenres) or 3]
+        if 'genres' not in metadata:
+            metadata['genres'] = genres
+
+        # Print message and allow user to skip
+        years = [year for year in group['years'] if year != 9999]
+        years = [-1] if len(years) == 0 else years
+        if args.confirm or args.verbose:
+            print(
+                f'Group candidate: name(s) '
+                + ', '.join(map(repr, group['titles']))
+                + f', type {group.get("type", "NA")!r}'
+                + f', count {group["count"]}'
+                + f', earliest year {min(years)}'
+                + f', latest year {max(years)}.'
+            )
+        if args.confirm and not confirm_prompt():
+            continue
+
+        # 3) The album artwork. Confirm if user wants it
+        # and print some related information
+        image = artwork_musicbrainz(group['releases'])
+        if image is None:
+            if args.verbose:
+                print(
+                    f'No album artwork available for group '
+                    f'{group["title"]!r}.'
+                )
+            continue
+        metadata.update(image=image, title=title, genres=genres)
+        return metadata
 
     # Exit from here if failed to get artwork every time
     if args.verbose:
@@ -994,87 +979,49 @@ def album_musicbrainz(recordings):
 
 
 def artwork_musicbrainz(releases):
-    """Gets album artwork, preferring anglophone countries."""
-    # First, go by release medium
-    years = [
-        int(release.get('date', '0001')[:4])
-        for release in releases
-        if release.get('date', '0001')
-    ]
-    # want to catch any unknown media
-    filter_known = [False for release in releases]
-    for m, medium in enumerate(media_prefs):
-        if medium == 'other':  # we are at the end; see if any media were left
-            filter_ = [not known for known in filter_known]
-        else:  # filter, and add known media to lsit
-            filter_ = [
-                any(
-                    medium in _.get('format', 'xxxxx').lower()
-                    for _ in release.get('medium-list', [{}])
-                )
-                for release in releases
-            ]  # last one is unknown
-            filter_known = [f1 or f2 for f1, f2 in zip(filter_, filter_known)]
-        ireleases = [r for f, r in zip(filter_, releases) if f]
-        iyears = [y for f, y in zip(filter_, years) if f]
-        for year in sorted(set(iyears), reverse=True):
-            jreleases = [r for r, y in zip(ireleases, iyears) if y == year]
-            for country in anglo_countries:
-                # Also try non-anglo countries (sometimes only one available)
-                if country == 'other':
-                    kreleases = [
-                        r
-                        for r in jreleases
-                        if r.get('country', 'NA') not in anglo_countries
-                    ]
-                else:
-                    kreleases = [
-                        r
-                        for r in jreleases
-                        if r.get('country', 'NA') == country
-                    ]
-                # Try to return image art; remaining releases, choose order at
-                # random
-                for release in kreleases:
-                    # User input
-                    rmedia = [
-                        m.get('format', '')
-                        for m in release.get('medium-list', [{}])
-                    ]
-                    rcountry, rtitle = (
-                        release.get('country', ''),
-                        release.get('title', ''),
-                    )
-                    if args.confirm or args.verbose:
-                        print(
-                            f'Artwork candidate: name {rtitle!r}, media '
-                            + ', '.join(map(repr, rmedia))
-                            + f', country {rcountry!r}'
-                            + f', year {year}.'
-                        )
-                    if args.confirm and not yes_no():
-                        continue
-                    # Pull artwork
-                    # This is a slow step, so make sure to print message
-                    try:
-                        print('Checking for artwork...')
-                        data = mb.get_image_front(release.get('id', ''))
-                    except ResponseError:
-                        continue
-                    # Manipulate
-                    image = Image.open(BytesIO(data))
-                    if args.verbose:
-                        print(
-                            f'Image shape: {image.size[0]} x {image.size[1]}.'
-                        )
-                    if image.size[0] != image.size[1]:
-                        print('Warping image to square.')
-                        data = BytesIO()
-                        sqsize = min(image.size)
-                        image = image.resize((sqsize, sqsize), Image.ANTIALIAS)
-                        image.save(data, format='JPEG')
-                        data = data.getvalue()
-                    return data
+    """Return the album artwork data. This prefers release group members from
+    modern media formats, recent years, and anglophone release countries."""
+    for release in sorted(releases, key=artwork_sort_key):
+        # User input
+        rmedia = [
+            m.get('format', '')
+            for m in release.get('medium-list', [{}])
+        ]
+        country = release.get('country', '')
+        title = release.get('title', '')
+        year = release.get('date', '0001')
+        if args.confirm or args.verbose:
+            print(
+                f'Artwork candidate: name {title!r}, media '
+                + ', '.join(map(repr, rmedia))
+                + f', country {country!r}'
+                + f', year {year}.'
+            )
+        if args.confirm and not confirm_prompt():
+            continue
+
+        # Pull artwork
+        # This is a slow step, so make sure to print message
+        try:
+            print('Checking for artwork...')
+            data = mb.get_image_front(release.get('id', ''))
+        except ResponseError:
+            continue
+
+        # Manipulate
+        image = Image.open(BytesIO(data))
+        if args.verbose:
+            print(
+                f'Image shape: {image.size[0]} x {image.size[1]}.'
+            )
+        if image.size[0] != image.size[1]:
+            print('Warping image to square.')
+            data = BytesIO()
+            sqsize = min(image.size)
+            image = image.resize((sqsize, sqsize), Image.ANTIALIAS)
+            image.save(data, format='JPEG')
+            data = data.getvalue()
+        return data
 
 
 def genres_discogs(rgid):
@@ -1088,16 +1035,23 @@ def genres_discogs(rgid):
         raise ValueError('MusicBrainz release-group ID appears to be invalid.')
 
     page = BeautifulSoup(content, 'lxml').decode()  # converts to string
+
     # Parse HTMl page to get the discogs id
     # From:
     # https://stackoverflow.com/questions/15517483/how-to-extract-urls-from-an-html-page-in-python
     url = True
     urls = []
-    while url:
-        url, n = find_urls(page)
-        page = page[n:]
-        if url:
-            urls.append(url)
+    while True:
+        start_link = page.find('a href')
+        if start_link == -1:
+            break
+        start_quote = page.find('"', start_link)
+        end_quote = page.find('"', start_quote + 1)
+        url = page[start_quote + 1:end_quote]
+        page = page[end_quote:]
+        if not url:
+            break
+        urls.append(url)
 
     # Get discogs URL (set comprehension, because want unique result)
     # And parse out the discogs release id
@@ -1383,7 +1337,7 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
                 f'Search failed. Try again with artist {artist!r} and '
                 f'recording name {recording!r}?'
             )
-            if not yes_no():
+            if not confirm_prompt():
                 return artist_orig, []
             else:
                 round2 = True
@@ -1435,6 +1389,7 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
             df = pd.read_csv(choices, index_col=0, dtype=str)
         except FileNotFoundError:
             df = pd.DataFrame()
+
         # Load old user response
         if (
             not args.forget and artist in df.index.values
@@ -1449,24 +1404,40 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
                 f'Loaded previous response: '
                 + ','.join(str(c) for c in response) + '.'
             )
+
         # Get and save new user response
         else:
-            response = None
-            while response is None:
+            N = len(uq_artists)
+            while True:
                 response = input(
                     'Which artist number(s) should we use (enter 0 for all)?'
                 )
-                response = user_choice(response, len(uq_artists))
+                if response in '0':  # includes empty string!
+                    response = [c + 1 for c in range(N)]
+                    break
+                try:
+                    response = [int(c) for c in response.split(',')]
+                except TypeError:
+                    print('Input must be integer.')
+                else:
+                    if any(c < 0 or c > N for c in response):
+                        print('Integer(s) must satisfy 0 <= N <= {N}.')
+                    else:
+                        break
             ids = ','.join(uq_artists[c - 1].get('id', '') for c in response)
             df.loc[artist] = ids  # add ids to dataframe
-            df.to_csv(choices, header=False)
-        recordings = [  # filter to user selected choice
+            df.to_csv(response, header=False)
+
+        # Filter to user selected choice
+        recordings = [
             irecording
             for irecording, recartistid in zip(recordings, rec_artists_ids)
             if recartistid in ids
         ]
+
     else:
-        recordings = [  # filter to user selected choice
+        # Select the first recording
+        recordings = [
             irecording
             for irecording, recartistid in zip(recordings, rec_artists_ids)
             if recartistid == uq_artists[0].get('id', '')
@@ -1483,12 +1454,7 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
         recordings = [
             irecording
             for irecording in recordings
-            if all(
-                x == y
-                for x, y in zip(
-                    to_words(recording), to_words(irecording.get('title', ''))
-                )
-            )
+            if word_tuple(recording) == word_tuple(irecording.get('title', ''))
         ]
         if args.verbose:
             rec_titles = {
