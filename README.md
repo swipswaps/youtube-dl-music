@@ -87,7 +87,7 @@ This time the filename(s) must have escaped spaces. The following command-line o
 
 In some cases, the tagging algorithm fails with `-s` -- e.g. a search for "Aerosmith - Dude Looks Like A Lady" filters out titles "Dude (Looks Like A Lady)" with parentheses, because parentheses often contain additional information unrelated to the song title. But in other cases it may be necessary -- e.g. without `-s`, a search for "Pink Floyd - Mother" also returns "Pink Floyd - Matilda Mother".
 
-`ydm-metadata` is certainly not the fastest tagging algorithm out there. For example, the builtin cover art downloader for the Android app "PowerAmp" is pretty darn fast. `ydm-metadata` is designed to strictly *minimize tagging errors*, and get the *highest possible quality cover art*. So, it is slow, but very accurate.
+`ydm-metadata` is certainly not the fastest tagging algorithm out there. For example, the builtin cover art downloader for the Android app "PowerAmp" is pretty darn fast. `ydm-metadata` is designed to strictly *minimize tagging errors*, and get the *highest possible quality cover art*. So it is slow, but very accurate.
 
 ## Metadata script algorithm
 `Mutagen` is used to write tags. For `mp3` files, tags are added to the ID3 header, while for `aac` and `m4a` files, tags are added in some mysterious way that Apple pioneered (but should still be readable by most media players).
@@ -95,20 +95,20 @@ In some cases, the tagging algorithm fails with `-s` -- e.g. a search for "Aeros
 Here's a play-by-play of what `ydm-metadata` does:
 
 1. Run strict search of MusicBrainz "recordings" matching the *filename-inferred* track name and with artist credits matching the *filename-inferred* artist name.
-    * Chooses the first credit artist, and ask for user input if the first credit artists in the release list differ.
-    * Allows for names starting with or without "the" (e.g. "Animals" vs. "The Animals"). If you forego the "the", the music files in your filesystem will appear sorted more naturally.
-    * Allows for names ending with "&" or "and" something (e.g. "Tom Petty *and the Heartbreakers*").
-    * Writes "artist" metadata according to the search results, rather than as it appears in the filename.
-2. Verify the recordings returned, eliminate some matches but permit others. In general, make sure "meaningful words" in the discovered recording names match the filename-inferred song name.
-    * Ignores "Atom Heart Mother" or "Matilda Mother" but allows "Mother".
-    * Allows "The Wall (part 1)" or "The Wall (part i)" for search for "The Wall".
-    * Allows "Hush / I'm Alive" in search for "Hush" by choosing optional match on stuff either side of "/".
+    * Choose the first credit artist and ask for user input if the first credit artists in the release list differ.
+    * Permit names starting *with or without* "the" (e.g. "Animals" instead of "The Animals"). If you omit the "the", the music in your filesystem will be sorted more naturally.
+    * Permit names ending with "&" or "and" something (e.g. "Tom Petty *and the Heartbreakers*").
+    * Write "artist" and "title" metadata according to the search results.
+2. Verify the recordings returned, eliminate some matches but permit others.
+    * Ensure "meaningful words" in the recording name matches the filename-inferred song name. For example, in a search for "Mother", "Atom Heart Mother" and "Matilda Mother" are ignored.
+    * Ignore content inside parentheses. For example, in a search for "The Wall", "The Wall (part 1)" and "The Wall (part i)" are included.
+    * Permit optional matches for text on either side of a "/". For example, in a search for "Hush", permit the recording name "Hush / I'm Alive".
 3. Get release "groups" from the release list belonging to each recording, and consolidate the recordings (sorted by unique ID) into their corresponding release groups.
-    * Sorts the release groups first according to a ranking scheme. Every release group has an associated "category", so try to pick singles and albums over compilations or live performances.
-    * Tries to pick release groups with releases from *earlier years* rather than later years. These are more likely to be "original" versions.
-4. Get several *album-related* metadata categories from our ordered hierarchy of releases belonging to unique release groups. This is the most important step.
-    * Writes "year" metadata from the earliest release amongst all members of *all* release groups.
-    * Writes "album" metadata from the highest-ranked release group containing the earliest release years.
+    * Sort the release groups to prefer albums and singles over compilations and live performances.
+    * Try to pick release groups with releases from *earlier years* rather than later years. These are more likely to be "original" versions.
+4. Get several *album related* metadata categories from our ordered hierarchy of releases belonging to unique release groups. This is the most important step.
+    * Write "year" metadata from the earliest release amongst all members of *all* release groups.
+    * Write "album" metadata from the highest-ranked release group containing the earliest release years.
     * Write "genres" from the first release group in the hierarchy for which genres are available. Genres are obtained from both MusicBrainz and the Discogs "master" recording (found by searching the MusicBrainz HTML webpage for a Discogs URL). MusicBrainz genres are translated and filtered to the limited subset used by Discogs.
     * Write "cover art" metadata from the latest release and most *modern* release format amongst releases in the highest-ranked release group. This gets the nicest-looking cover art available. If `--confirm` was passed, you can choose to bypass certain release groups and releases.
 
