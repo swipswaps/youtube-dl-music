@@ -161,11 +161,11 @@ type_prefs = (
     'Album',
     'Single',
     'EP',
+    'Unknown',
     'Compilation',
-    'Other',
     'Soundtrack',
     'Live',
-    'NA',
+    'Other',  # remix, audiobook, etc.
 )
 
 # Preferred media type for album name and artwork
@@ -787,7 +787,10 @@ def word_tuple(string):
 def album_sort_key(release_group):
     """Sorting algorithm for selecting the 'best' release group. This can be
     passed to `sorted` with ``key=lambda_sort``."""
-    type_ = type_prefs.index(release_group.get('type', 'NA'))
+    try:
+        type_ = type_prefs.index(release_group.get('type', 'Unknown'))
+    except ValueError:
+        type_ = type_prefs.index('Other')
     year = min(release_group['years'])  # start with early release years
     count = -release_group['count']  # start with large counts
     return type_, year, count
@@ -797,6 +800,7 @@ def artwork_sort_key(release):
     """Sorting algorithm for selecting the highest quality/most accurate
     artwork in a release group. This can be passed to `sorted` with
     ``key=lambda_sort``."""
+    # Retrieve the 'highest quality' format in the media list
     media = [
         medium.get('format', 'unknown').lower()
         for medium in release.get('medium-list', [{}])
@@ -807,6 +811,7 @@ def artwork_sort_key(release):
             break
         if i == len(media_prefs) - 1:
             medium = media_prefs.index('other')
+    # Prefer later years and anglophone countries
     year = -int(release.get('date', '0001')[:4] or '0001')  # prefer later
     try:
         country = anglo_countries.index(release.get('country', 'NA'))
