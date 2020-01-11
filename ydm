@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-usage="ydm [OPTION...] URL ARTIST - TITLE
-ydm [OPTION...] URL ARTIST/TITLE"
+usage1="ydm [OPTION...] URL ARTIST - TITLE"
+usage2="ydm [OPTION...] URL ARTIST/TITLE"
 doc="
 Usage
 
-  $usage
+  $usage1
+  $usage2
 
 Description
 
@@ -48,7 +49,8 @@ bitrate() {
   ffmpeg -i "$1" -hide_banner 2>&1 | cat | grep 'bitrate' | cut -d, -f3 | tr -dc '[0-9]'
 }
 raise() {
-  echo "Usage: $usage"
+  echo "$usage1"
+  echo "$usage2"
   echo "Error: $@"
   exit 1
 }
