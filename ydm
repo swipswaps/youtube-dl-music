@@ -36,8 +36,7 @@ Optional arguments
   -4|--m4a               Save as M4A. This is the default.
   -q|--quick             Skip the tagging step.
   -Q|--very-quick        Skip the volume normalization and tagging steps.
-  -cl|--classical        Download to a separate classical folder in the same
-                         location as the directory shown in './config'.
+  -cl|--classical        Set the sole genre tag to 'classical'.
   -c=N|--cut-leading=N   Trims the leading N seconds.
   -C=N|--cut-trailing=N  Trims the trailing N seconds.
   -*                     Remaining flags passed to ydm-metadata.
@@ -115,7 +114,6 @@ config=$(dirname $(realpath $0))/.config
 directory="$(cat "$config" | grep "directory" | cut -s -d '=' -f 2 | xargs)"
 directory="${directory/"~"/$HOME}" # don't expand spaces, but expand ~
 directory="${directory%/}" # trim trailing slash if present
-$classical && directory="${directory%/*}/classical"
 [ -n "$directory" ] || raise "Output directory must be declared in the \"$config\" file with 'directory=DIRECTORY'."
 [ -d "$directory" ] || raise "Output directory \"$directory\" does not exist or is not a directory."
 
