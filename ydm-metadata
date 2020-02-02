@@ -121,13 +121,13 @@ from PIL import Image
 
 # Read config file
 sdir = os.path.dirname(os.path.realpath(__file__))
-config = f"{sdir}/.config"
-choices = f"{sdir}/.choices"
-if not os.path.exists(config):
+file_config = f"{sdir}/.config"
+file_choices = f"{sdir}/.choices"
+if not os.path.exists(file_config):
     raise IOError(
-        "Add fields to the file {config!r} to enable metadata tagging."
+        "Add fields to the file {file_config!r} to enable metadata tagging."
     )
-with open(config, "r") as file:
+with open(file_config, "r") as file:
     config = file.readlines()
 config = [
     l.strip().replace("\"", '').replace("'", '').split('=')
@@ -1391,7 +1391,7 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
                 f"({uq_artist.get('disambiguation','')})".split('()')[0]
             )
         try:
-            df = pd.read_csv(choices, index_col=0, dtype=str)
+            df = pd.read_csv(file_choices, index_col=0, dtype=str)
         except FileNotFoundError:
             df = pd.DataFrame()
 
@@ -1431,7 +1431,7 @@ def recording_musicbrainz(artist, recording):  # artistnames, artistids):
                         break
             ids = ','.join(uq_artists[c - 1].get('id', '') for c in response)
             df.loc[artist] = ids  # add ids to dataframe
-            df.to_csv(response, header=False)
+            df.to_csv(file_choices, header=False)
 
         # Filter to user selected choice
         recordings = [
@@ -1527,7 +1527,7 @@ for path in args.path:
     genres = ', '.join(album['genres'] or [])
     print(
         f'Album {album["title"]!r} ({album["year"]}'
-        f'{"; "*bool(genres)}{genres})'.split('()')[0].strip()
+        f'{"; " * bool(genres)}{genres})'.split('()')[0].strip()
     )
 
     # Edit the ID3 header, if file has one
