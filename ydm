@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=2001,2002,2018,2019
 usage1="ydm [OPTION...] URL ARTIST - TITLE"
 usage2="ydm [OPTION...] URL ARTIST/TITLE"
 doc="
@@ -45,18 +46,18 @@ Optional arguments
 # NOTE: Could also use afinfo for this part
 # let bits=$(afinfo "$path_dl" | grep 'bit rate' | tr -dc '[0-9]')/1000
 bitrate() {
-  ffmpeg -i "$1" -hide_banner 2>&1 | cat | grep 'bitrate' | cut -d, -f3 | tr -dc '[0-9]'
+  ffmpeg -i "$1" -hide_banner 2>&1 | cat | grep 'bitrate' | cut -d, -f3 | tr -dc 0-9
 }
 raise() {
   echo "$usage1"
   echo "$usage2"
-  echo "Error: $@"
+  echo "Error: $*"
   exit 1
 }
 # Parse input
 quick=0  # 1 means skip metadata, 2 means skip normalization
-flags='-q -f bestaudio --no-playlist'
-metadata=true  # by default, retrieve metadata and noarmalize
+ydmflags=(-q -f bestaudio --no-playlist)
+normflags=(-t -23)  # normalize to default of -23
 classical=false  # different folder for classical music
 normflags="-t -23"  # normalize to default of -23
 while [ $# -gt 0 ]; do
@@ -119,13 +120,13 @@ directory="${directory%/}" # trim trailing slash if present
 
 # MP3 or M4A?
 if [ -z "$mp3" ]; then
-  mp3="$(cat "$config" | grep "mp3" | cut -s -d '=' -f 2 | tr [A-Z] [a-z] | xargs)"
+  mp3="$(cat "$config" | grep "mp3" | cut -s -d '=' -f 2 | tr A-Z a-z | xargs)"
   [ -n "$mp3" ] || mp3=false
   if ! [[ "$mp3" == "true" || "$mp3" == "false" ]]; then
     raise "Value 'mp3' in .config file must be either 'true' or 'false'."
   fi
 fi
-$mp3 && ext_new="mp3" || ext_new="m4a"
+$mp3 && ext="mp3" || ext="m4a"
 
 # Create artist directory if necessary
 if [[ "$name" =~ '/' ]]; then
@@ -134,30 +135,35 @@ if [[ "$name" =~ '/' ]]; then
     raise "Path name '$name' must have only one forward slash. Found $num slashes."
   name=$(echo "$name" | sed 's: */ *:/:g')
   artist=${name%/*}
-  [ -d "$directory/$artist" ] || mkdir "$directory/$artist"
-  [ $? -eq 0 ] || raise "Failed to make directory '$directory/$artist'."
+  [ -d "$directory/$artist" ] \
+    || mkdir "$directory/$artist" \
+    || raise "Failed to make directory '$directory/$artist'."
 elif ! [[ "$name" =~ ' - ' ]]; then
   echo "Warning: To add metadata file must be in format 'ARTIST - TITLE' or 'ARTIST/TITLE'."
 fi
 
 # Paths
 # TODO: Support for downloading entire playlists or albums
-path_template="$directory/$name-download.%(ext)s" # see youtube-dl help info; just picks whatever extension
-path_normalized="$directory/$name-normalized.$ext_new"
-path_intermediate="$directory/$name-normalized.wav" # sometimes unused
-path_final="$directory/$name.$ext_new"
+path_template="$directory/$name-download.%(ext)s"  # see youtube-dl help info; just picks whatever extension
+path_normalized="$directory/$name-normalized.$ext"
+path_final="$directory/$name.$ext"
+
+# Remove previous download products
+rm "${path_template%.*}".* 2>/dev/null
+rm "${path_normalized}"
 
 #------------------------------------------------------------------------------#
 # Download, using youtube-dl
 #------------------------------------------------------------------------------#
-echo "Determining filetype."
-path_dl=$(youtube-dl --get-filename $flags "$url" -o "$path_template") # no playlist, in case user provides playlist URL
-[ -n "$path_dl" ] || raise "Download failed."
-ext="${path_dl##*.}"
+# NOTE: Previously used youtube-dl --get-filename but this causes irritating
+# delay. Easier to just query results with a glob pattern.
 echo "Downloading."
-youtube-dl $flags "$url" -o "$path_template" # no playlist, in case user provides playlist URL
-[ $? -eq 0 ] || raise "Download failed."
+youtube-dl "${ydmflags[@]}" "$url" -o "$path_template" # no playlist, in case user provides playlist URL
+paths_dl=("${path_template%.*}".*)
+[ ${#paths_dl[@]} -eq 0 ] && raise "Download failed."
+[ ${#paths_dl[@]} -gt 1 ] && raise "Ambiguous download results: ${paths_dl[*]}"
 [ $quick -ge 2 ] && exit 0
+path_dl="${paths_dl[0]}"
 
 #------------------------------------------------------------------------------#
 # Normalize audio and re-compress into AAC
@@ -180,13 +186,15 @@ bitrate=$((bitrate*3/2))
 # Save to m4a, uses highest quality encoder
 if ! $mp3; then
   echo "Normalizing volume and saving to m4a."
-  ffmpeg-normalize "$path_dl" $normflags "$trimflag" -f -c:a libfdk_aac -b:a ${bitrate}k -o "$path_normalized"
-  [ $? -eq 0 ] || raise "Normalization failed."
+  ffmpeg-normalize "$path_dl" "${normflags[@]}" "$trimflag" \
+    -f -c:a libfdk_aac -b:a ${bitrate}k -o "$path_normalized" \
+    || raise "Normalization failed."
 # Save to mp3
 else
   echo "Normalizing volume and saving to mp3."
-  ffmpeg-normalize "$path_dl" $normflags "$trimflag" -f -c:a libmp3lame -b:a ${bitrate}k -o "$path_normalized"
-  [ $? -eq 0 ] || raise "Normalization failed."
+  ffmpeg-normalize "$path_dl" "${normflags[@]}" "$trimflag" \
+    -f -c:a libmp3lame -b:a ${bitrate}k -o "$path_normalized" \
+    || raise "Normalization failed."
 fi
 
 # Cleanup
@@ -199,5 +207,5 @@ mv "$path_normalized" "$path_final"
 # Change metadata using python function
 #------------------------------------------------------------------------------#
 echo "Adding metadata."
-ydm-metadata $metaflags --url "$url" "$path_final"
-[ $? -eq 0 ] || raise "Metadata script failed."
+ydm-metadata $metaflags --url "$url" "$path_final" \
+  || raise "Metadata script failed."
